@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: kpi-collection-system
+  datasource:
+    # ????useSSL??false???????true
+    url: jdbc:mysql://localhost:3306/kpiCollectionSystem?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: "123456"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+  security:
+    user:
+      name: user
+      password: 1234
+
+server:
+  port: 8080
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+  mapper-locations: classpath*:mapper/**/*.xml
+
+logging:
+  level:
+    com.baiyun.kpicollectionsystem: info
+    com.baomidou.mybatisplus: info
+
+app:
+  jwt:
+    secret: ReplaceWithAStrongSecretKey_ChangeMe
+    expire-seconds: 2592000
+  file:
+    upload-dir: ${user.home}/kpi-uploads
