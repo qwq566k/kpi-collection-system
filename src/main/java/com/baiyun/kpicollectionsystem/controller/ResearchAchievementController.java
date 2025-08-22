@@ -48,11 +48,11 @@ public class ResearchAchievementController {
 	}
 
 	@GetMapping("/getAllRecords")
-	public Result<Map<String, Object>> list(@RequestParam int page, @RequestParam int size, @RequestHeader(value = "Authorization", required = false) String auth) {
+	public Result<Map<String, Object>> list(@RequestParam int page, @RequestParam int size, @RequestHeader(value = "token", required = false) String token) {
 		Integer submitterId = null;
 		try {
-			if (auth != null && auth.startsWith("Bearer ")) {
-				var claims = jwtUtil.parseToken(auth.substring(7));
+			if (token != null) {
+				var claims = jwtUtil.parseToken(token);
 				Object idObj = claims.get("id");
 				if (idObj instanceof Number n) {
 					submitterId = n.intValue();

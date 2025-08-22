@@ -30,18 +30,29 @@ public class SecurityConfig {
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
+		return new PasswordEncoder() {
+			@Override
+			public String encode(CharSequence rawPassword) {
+				return rawPassword.toString();
+			}
+
+			@Override
+			public boolean matches(CharSequence rawPassword, String encodedPassword) {
+				return encode(rawPassword).equals(encodedPassword);
+			}
+		};
 	}
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
 		http.csrf(csrf -> csrf.disable());
 		http.sessionManagement(mgr -> mgr.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-		http.authorizeHttpRequests(registry -> registry
-				.requestMatchers("/health", "/api/user/login", "/api/uploadFile").permitAll()
-				.requestMatchers("/upload/**", "/export/**").permitAll()
-				.requestMatchers(HttpMethod.GET, "/api/getAllField", "/api/getKeyIndicators", "/api/getStandards").permitAll()
-				.anyRequest().authenticated());
+//		http.authorizeHttpRequests(registry -> registry
+//				.requestMatchers("/health", "/api/user/login", "/api/uploadFile").permitAll()
+//				.requestMatchers("/upload/**", "/export/**").permitAll()
+//				.requestMatchers(HttpMethod.GET, "/api/getAllField", "/api/getKeyIndicators", "/api/getStandards").permitAll()
+//				.anyRequest().authenticated());
+		http.authorizeHttpRequests(auth ->auth.anyRequest().permitAll());
 		http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
