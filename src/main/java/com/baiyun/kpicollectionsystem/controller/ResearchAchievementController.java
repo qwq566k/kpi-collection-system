@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baiyun.kpicollectionsystem.common.Result;
 import com.baiyun.kpicollectionsystem.entity.ResearchAchievement;
 import com.baiyun.kpicollectionsystem.service.ResearchAchievementService;
-import com.baiyun.kpicollectionsystem.security.JwtUtil;
+import com.baiyun.kpicollectionsystem.util.JwtUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;

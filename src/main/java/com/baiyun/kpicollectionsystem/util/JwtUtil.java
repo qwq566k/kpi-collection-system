@@ -1,4 +1,4 @@
-package com.baiyun.kpicollectionsystem.security;
+package com.baiyun.kpicollectionsystem.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

@@ -1,19 +1,20 @@
-package com.baiyun.kpicollectionsystem.security;
+package com.baiyun.kpicollectionsystem.config;
 
+import com.baiyun.kpicollectionsystem.Filter.JwtFilter;
+import com.baiyun.kpicollectionsystem.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -27,6 +28,9 @@ import java.util.List;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+
+	@Autowired
+	private JwtFilter jwtFilter;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -44,7 +48,9 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.formLogin(form -> form.disable());
+		http.logout(logout -> logout.disable());
 		http.csrf(csrf -> csrf.disable());
 		http.sessionManagement(mgr -> mgr.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 //		http.authorizeHttpRequests(registry -> registry
@@ -53,36 +59,11 @@ public class SecurityConfig {
 //				.requestMatchers(HttpMethod.GET, "/api/getAllField", "/api/getKeyIndicators", "/api/getStandards").permitAll()
 //				.anyRequest().authenticated());
 		http.authorizeHttpRequests(auth ->auth.anyRequest().permitAll());
-		http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
 
-	@Component
-	public static class JwtAuthFilter extends OncePerRequestFilter {
-		private final JwtUtil jwtUtil;
 
-		public JwtAuthFilter(JwtUtil jwtUtil) {
-			this.jwtUtil = jwtUtil;
-		}
-
-		@Override
-		protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-			String auth = request.getHeader("Authorization");
-			if (StringUtils.hasText(auth) && auth.startsWith("Bearer ")) {
-				String token = auth.substring(7);
-				try {
-					var claims = jwtUtil.parseToken(token);
-					Object idObj = claims.get("id");
-					String name = (String) claims.get("name");
-					String role = (String) claims.get("role");
-					int uid = idObj instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(idObj));
-					var authToken = new UsernamePasswordAuthenticationToken(name + "#" + uid, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-					SecurityContextHolder.getContext().setAuthentication(authToken);
-				} catch (Exception ignored) { }
-			}
-			filterChain.doFilter(request, response);
-		}
-	}
 }
 
 

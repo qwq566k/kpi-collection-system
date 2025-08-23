@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baiyun.kpicollectionsystem.common.Result;
 import com.baiyun.kpicollectionsystem.entity.Users;
 import com.baiyun.kpicollectionsystem.mapper.UsersMapper;
-import com.baiyun.kpicollectionsystem.security.JwtUtil;
+import com.baiyun.kpicollectionsystem.util.JwtUtil;
 import com.baiyun.kpicollectionsystem.service.UserService;
 import com.baiyun.kpicollectionsystem.entity.SysUserRole;
 import com.baiyun.kpicollectionsystem.entity.SysRole;
@@ -14,7 +14,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
