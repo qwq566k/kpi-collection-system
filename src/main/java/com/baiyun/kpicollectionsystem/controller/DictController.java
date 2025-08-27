@@ -46,7 +46,7 @@ public class DictController {
 	}
 
 	@GetMapping("/getKeyIndicators")
-	public Result<List<Map<String, Object>>> indicators(@RequestParam("fielfId") Integer fieldId) {
+	public Result<List<Map<String, Object>>> indicators(@RequestParam("fieldId") Integer fieldId) {
 		List<KeyIndicator> list = indicatorMapper.selectList(new LambdaQueryWrapper<KeyIndicator>().eq(KeyIndicator::getStatus, 1));
 		List<Map<String, Object>> res = new ArrayList<>();
 		for (KeyIndicator i : list) {

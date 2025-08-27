@@ -21,7 +21,7 @@ public class ResearchAchievementServiceImpl implements ResearchAchievementServic
 	@Override
 	@Transactional
 	public void submit(ResearchAchievement ra, boolean asDraft) {
-		ra.setStatus(asDraft ? "draft" : "pending");
+		ra.setStatus(asDraft ? 0 : 1);
 		if (ra.getId() == null) {
 			mapper.insert(ra);
 		} else {
@@ -34,7 +34,7 @@ public class ResearchAchievementServiceImpl implements ResearchAchievementServic
 	public void updateRecord(ResearchAchievement ra) {
 		ResearchAchievement db = mapper.selectById(ra.getId());
 		if (db == null) throw new IllegalArgumentException("记录不存在");
-		if (!("draft".equals(db.getStatus()) || "rejected".equals(db.getStatus()))) {
+		if (!(db.getStatus() == 0 || db.getStatus() == 3)) {
 			throw new IllegalArgumentException("仅草稿或已退回可修改");
 		}
 		mapper.updateById(ra);

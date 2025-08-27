@@ -28,7 +28,7 @@ public class ResearchAchievement {
 	private LocalDate obtainDate;
 	private String evidenceFile;
 	private Integer score;
-	private String status;
+	private Integer status;
 	private String rejectReason;
 	private Integer reviewerId;
 	private String reviewerName;

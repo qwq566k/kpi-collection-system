@@ -47,7 +47,7 @@ public class AdminController {
 	public Result<Void> approve(@RequestParam Integer id) {
 		ResearchAchievement ra = mapper.selectById(id);
 		if (ra == null) return Result.failure("记录不存在");
-		ra.setStatus("approved");
+		ra.setStatus(2);
 		ra.setRejectReason(null);
 		ra.setReviewedAt(LocalDateTime.now());
 		mapper.updateById(ra);
@@ -60,7 +60,7 @@ public class AdminController {
 		ResearchAchievement ra = mapper.selectById(req.getId());
 		if (ra == null) return Result.failure("记录不存在");
 		if (req.getRejectReason() == null || req.getRejectReason().isBlank()) return Result.failure("退回原因必填");
-		ra.setStatus("rejected");
+		ra.setStatus(3);
 		ra.setRejectReason(req.getRejectReason());
 		ra.setReviewedAt(LocalDateTime.now());
 		mapper.updateById(ra);
