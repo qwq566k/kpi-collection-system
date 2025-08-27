@@ -1,11 +1,14 @@
 package com.baiyun.kpicollectionsystem.service.impl;
 
+import com.baiyun.kpicollectionsystem.entity.Users;
+import com.baiyun.kpicollectionsystem.mapper.UsersMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baiyun.kpicollectionsystem.entity.ResearchAchievement;
 import com.baiyun.kpicollectionsystem.mapper.ResearchAchievementMapper;
 import com.baiyun.kpicollectionsystem.service.ResearchAchievementService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +17,8 @@ public class ResearchAchievementServiceImpl implements ResearchAchievementServic
 
 	private final ResearchAchievementMapper mapper;
 
+	@Autowired
+	private UsersMapper usersMapper;
 	public ResearchAchievementServiceImpl(ResearchAchievementMapper mapper) {
 		this.mapper = mapper;
 	}
@@ -21,6 +26,9 @@ public class ResearchAchievementServiceImpl implements ResearchAchievementServic
 	@Override
 	@Transactional
 	public void submit(ResearchAchievement ra, boolean asDraft) {
+		Users users = usersMapper.selectById(ra.getSubmitterId());
+		ra.setDepartment(users.getDepartment());
+
 		ra.setStatus(asDraft ? 0 : 1);
 		if (ra.getId() == null) {
 			mapper.insert(ra);
