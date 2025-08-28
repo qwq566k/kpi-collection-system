@@ -11,10 +11,10 @@ import java.util.Map;
 @Mapper
 public interface ResearchAchievementMapper extends BaseMapper<ResearchAchievement> {
 
-	@Select("select field_name as fieldName, coalesce(sum(score),0) as score from research_achievements where status='approved' group by field_name")
+	@Select("select name as fieldName, score from assessment_fields  group by name")
 	List<Map<String, Object>> selectAreaStats();
 
-	@Select("select submitter_name as submitterName, coalesce(sum(score),0) as score from research_achievements where status='approved' group by submitter_name")
+	@Select("select submitter_name as submitterName, coalesce(sum(score),0) as score from research_achievements where status=2 group by submitter_name")
 	List<Map<String, Object>> selectSubmitterStats();
 }
 
