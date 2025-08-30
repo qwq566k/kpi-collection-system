@@ -1,5 +1,6 @@
 package com.baiyun.kpicollectionsystem.controller;
 
+import com.baiyun.kpicollectionsystem.mapper.ScoreStandardMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baiyun.kpicollectionsystem.common.Result;
 import com.baiyun.kpicollectionsystem.entity.ResearchAchievement;
@@ -35,9 +36,9 @@ public class ExportController {
 	@Value("${app.file.upload-dir}")
 	private String uploadDir;
 
-	public ExportController(ResearchAchievementMapper mapper) {
+	public ExportController(ResearchAchievementMapper mapper, ScoreStandardMapper standardMapper) {
 		this.mapper = mapper;
-	}
+    }
 
 	@PostMapping("/exportQuery")
 	@PreAuthorize("hasRole('admin')")
@@ -80,13 +81,13 @@ public class ExportController {
 			row.createCell(2).setCellValue(ra.getAchievementName());
 			row.createCell(3).setCellValue(ra.getSubmitterName());
 			row.createCell(4).setCellValue(ra.getTeamMembers() == null ? "" : ra.getTeamMembers().toString());
-			row.createCell(5).setCellValue(ra.getObtainDate());
+			row.createCell(5).setCellValue(ra.getObtainDate().toString());
 			row.createCell(6).setCellValue(ra.getFieldName());
 			row.createCell(7).setCellValue(ra.getIndicatorName());
 			row.createCell(8).setCellValue(ra.getStandardName());
 			row.createCell(9).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
-//			row.createCell(10).setCellValue(ra.get());
-//			row.createCell(11).setCellValue(ra.get());
+			row.createCell(10).setCellValue(ra.getScoringInstruction());
+			row.createCell(11).setCellValue(ra.getAssessmentOrg());
 		}
 		String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 		Path dir = Paths.get(uploadDir, today);

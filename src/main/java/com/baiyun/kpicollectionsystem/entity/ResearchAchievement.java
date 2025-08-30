@@ -35,8 +35,8 @@ public class ResearchAchievement {
 	private LocalDateTime reviewedAt;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
-//	private String scoreExplain;
-//	private String orgDepartment;
+	private String scoringInstruction;
+	private String assessmentOrg;
 }
 
 

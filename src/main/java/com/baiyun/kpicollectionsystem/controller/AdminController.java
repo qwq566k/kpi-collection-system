@@ -65,6 +65,8 @@ public class AdminController {
 		field.setScore(field.getScore() + standard.getScore());
 		//设置记录的状态
 		ra.setStatus(2);
+		ra.setScoringInstruction(standardMapper.selectInstructionById(ra.getStandardId()));
+		ra.setAssessmentOrg(standardMapper.selectOrgById(ra.getStandardId()));
 		ra.setRejectReason(null);
 		ra.setReviewedAt(LocalDateTime.now());
 
