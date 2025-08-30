@@ -105,6 +105,9 @@
             :total="total"
             :page-sizes="[10, 20, 50]"
             layout="total, sizes, prev, pager, next"
+            :pager-count="5"
+            prev-text="上一页"
+            next-text="下一页"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
           />
@@ -420,7 +423,7 @@ onMounted(() => {
 
 <style scoped>
 .users-page {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 

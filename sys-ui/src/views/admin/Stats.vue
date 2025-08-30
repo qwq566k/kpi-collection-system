@@ -5,57 +5,63 @@
       
       <!-- 提交量概览 -->
       <div class="overview-section">
-        <h3 class="section-title">提交量概览</h3>
-        <div class="stats-cards">
-          <div class="stat-card">
-            <div class="stat-number">{{ submissionStats.total || 0 }}</div>
-            <div class="stat-label">总提交量</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ submissionStats.approved || 0 }}</div>
-            <div class="stat-label">已通过</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ submissionStats.pending || 0 }}</div>
-            <div class="stat-label">待审核</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ submissionStats.rejected || 0 }}</div>
-            <div class="stat-label">已退回</div>
-          </div>
-          <div class="stat-card total-score">
-            <div class="stat-number">{{ submissionStats.totalScore || 0 }}</div>
-            <div class="stat-label">总分统计</div>
+        <div class="card">
+          <div class="card-title">提交量概览</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-title">总提交量</div>
+              <div class="stat-value">{{ submissionStats.total || 0 }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">已通过</div>
+              <div class="stat-value">{{ submissionStats.approved || 0 }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">待审核</div>
+              <div class="stat-value">{{ submissionStats.pending || 0 }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">已退回</div>
+              <div class="stat-value">{{ submissionStats.rejected || 0 }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">总分统计</div>
+              <div class="stat-value">{{ submissionStats.totalScore || 0 }}</div>
+            </div>
           </div>
         </div>
       </div>
       
       <!-- 按考核领域统计 -->
       <div class="area-stats-section">
-        <h3 class="section-title">按考核领域统计 (分数)</h3>
-        <div class="stats-cards">
-          <div 
-            v-for="area in areaStats" 
-            :key="area.fieldName"
-            class="stat-card"
-          >
-            <div class="stat-number">{{ area.score || 0 }}</div>
-            <div class="stat-label">{{ area.fieldName }}</div>
+        <div class="card">
+          <div class="card-title">按考核领域统计（分数）</div>
+          <div class="stat-grid">
+            <div 
+              v-for="area in areaStats" 
+              :key="area.fieldName"
+              class="stat-card"
+            >
+              <div class="stat-title">{{ area.fieldName }}</div>
+              <div class="stat-value">{{ area.score || 0 }}</div>
+            </div>
           </div>
         </div>
       </div>
       
       <!-- 按负责人统计 -->
       <div class="submitter-stats-section">
-        <h3 class="section-title">按负责人统计 (分数)</h3>
-        <div class="stats-cards">
-          <div 
-            v-for="submitter in submitterStats" 
-            :key="submitter.submitterName"
-            class="stat-card"
-          >
-            <div class="stat-number">{{ submitter.score || 0 }}</div>
-            <div class="stat-label">{{ submitter.submitterName }}</div>
+        <div class="card">
+          <div class="card-title">按负责人统计（分数）</div>
+          <div class="stat-grid">
+            <div 
+              v-for="submitter in submitterStats" 
+              :key="submitter.submitterName"
+              class="stat-card"
+            >
+              <div class="stat-title">{{ submitter.submitterName }}</div>
+              <div class="stat-value">{{ submitter.score || 0 }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -121,8 +127,11 @@ onMounted(() => {
 
 <style scoped>
 .stats-page {
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 20px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
 }
 
 .page-title {
@@ -130,76 +139,108 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 600;
   color: #333;
+  font-family: 'Microsoft YaHei', sans-serif;
 }
 
 .overview-section,
 .area-stats-section,
 .submitter-stats-section {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
-.section-title {
-  margin: 0 0 24px 0;
+/* 卡片样式 */
+.card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-title {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: bold;
+  margin-bottom: 15px;
   color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Microsoft YaHei', sans-serif;
 }
 
-.stats-cards {
+/* 统计网格样式 */
+.stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
+/* 统计卡片样式 */
 .stat-card {
-  background: white;
-  color: #333;
-  padding: 12px;
-  border-radius: 6px;
-  text-align: center;
-  transition: all 0.2s ease;
-  border: 1px solid #000000;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 15px;
+  background-color: white;
+  transition: box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.stat-card.total-score {
-  background: white;
-  border: 1px solid #000000;
+.stat-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+  font-family: 'Microsoft YaHei', sans-serif;
 }
 
-.stat-number {
+.stat-value {
   font-size: 24px;
   font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 11px;
-  opacity: 0.9;
+  color: #333;
+  font-family: 'Microsoft YaHei', sans-serif;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .stats-cards {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
+  .stat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
   }
   
   .stat-card {
-    padding: 20px;
+    padding: 12px;
   }
   
-  .stat-number {
-    font-size: 28px;
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .stat-title {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+  }
+  
+  .stat-title {
+    font-size: 11px;
   }
 }
 </style>

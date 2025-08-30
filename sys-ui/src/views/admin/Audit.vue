@@ -57,7 +57,7 @@
           <el-table-column prop="year" label="年度" width="80" />
           <el-table-column prop="department" label="部门" width="120" />
           <el-table-column prop="submitterName" label="负责人" width="100" />
-          <el-table-column prop="achievementName" label="成果名称" min-width="200" />
+          <el-table-column prop="achievementName" label="成果名称" min-width="80" align="center"/>
           <el-table-column prop="fieldName" label="考核领域" width="120" />
           <el-table-column prop="indicatorName" label="关键指标" width="120" />
           <el-table-column label="评价标准" min-width="200">
@@ -134,6 +134,9 @@
             :total="total"
             :page-sizes="[10, 20, 50]"
             layout="total, sizes, prev, pager, next"
+            :pager-count="5"
+            prev-text="上一页"
+            next-text="下一页"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
           />
@@ -360,7 +363,7 @@ onMounted(() => {
 
 <style scoped>
 .audit-page {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 

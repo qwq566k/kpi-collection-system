@@ -56,6 +56,27 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="分值">
+              <el-input v-model="achievement.score" disabled placeholder="无数据" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="考核组织">
+              <el-input v-model="achievement.assessmentOrg" disabled placeholder="无数据" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="赋分说明">
+              <el-input v-model="achievement.scoringInstruction" type="textarea" :rows="3" disabled placeholder="无数据" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="提交日期">
               <el-input :model-value="formatDateTime(achievement.updatedAt || achievement.submitDate)" disabled />
             </el-form-item>
@@ -260,10 +281,9 @@ defineExpose({ open })
 
 .reject-reason {
   background-color: #fff5f5;
-  padding: 12px;
+  padding: 8px;
   border-radius: 4px;
   border: 1px solid #fed7d7;
-  margin-top: 8px;
   color: #e53e3e;
   line-height: 1.6;
 }
