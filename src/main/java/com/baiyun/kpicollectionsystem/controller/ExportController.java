@@ -108,13 +108,14 @@ public class ExportController {
 
 	private LambdaQueryWrapper<ResearchAchievement> buildWrapperFromReq(Map<String, Object> req) {
 		LambdaQueryWrapper<ResearchAchievement> qw = new LambdaQueryWrapper<>();
-		Object fieldName = req.get("fieldName");
+		Object fieldId = req.get("fieldId");
 		Object submitterName = req.get("submitterName");
 		Object startDate = req.get("startDate");
 		Object endDate = req.get("endDate");
-		if (fieldName instanceof String s && !s.isBlank()) qw.like(ResearchAchievement::getFieldName, s);
+		if (fieldId instanceof Integer id) qw.eq(ResearchAchievement::getFieldId, id);
 		if (submitterName instanceof String s && !s.isBlank()) qw.like(ResearchAchievement::getSubmitterName, s);
-		// 日期条件简化，假设按创建时间字符串处理
+		if (startDate instanceof String start && !start.isBlank()) qw.ge(ResearchAchievement::getObtainDate, startDate);
+		if (endDate instanceof String end && !end.isBlank()) qw.le(ResearchAchievement::getObtainDate, endDate);
 		return qw;
 	}
 

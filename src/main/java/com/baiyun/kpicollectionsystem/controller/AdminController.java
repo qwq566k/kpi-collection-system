@@ -42,7 +42,7 @@ public class AdminController {
 		LambdaQueryWrapper<ResearchAchievement> qw = new LambdaQueryWrapper<>();
 		if (req.getFieldId() != null) qw.eq(ResearchAchievement::getFieldId, req.getFieldId());
 		if (req.getSubmitterName() != null && !req.getSubmitterName().isEmpty()) qw.like(ResearchAchievement::getSubmitterName, req.getSubmitterName());
-		if (req.getStatus() != null) qw.eq(ResearchAchievement::getStatus, mapStatus(req.getStatus()));
+		if (req.getStatus() != null) qw.eq(ResearchAchievement::getStatus, req.getStatus());
 		qw.orderByDesc(ResearchAchievement::getCreatedAt);
 		IPage<ResearchAchievement> p = mapper.selectPage(page, qw);
 		Map<String, Object> data = new HashMap<>();
@@ -116,15 +116,6 @@ public class AdminController {
 		return Result.success(mapper.selectSubmitterStats());
 	}
 
-	private String mapStatus(Integer s) {
-		return switch (s) {
-			case 0 -> "draft";
-			case 1 -> "pending";
-			case 2 -> "approved";
-			case 3 -> "rejected";
-			default -> null;
-		};
-	}
 
 	@Data
 	public static class QueryReq {
