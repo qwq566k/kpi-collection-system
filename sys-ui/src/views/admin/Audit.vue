@@ -253,8 +253,8 @@ const handleView = async (row) => {
 // 通过记录
 const handleApprove = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要通过这条记录吗？', '提示', {
-      confirmButtonText: '确定',
+    await ElMessageBox.confirm('确定要通过这条记录吗？通过后将无法再修改审核结果。', '确认通过', {
+      confirmButtonText: '确定通过',
       cancelButtonText: '取消',
       type: 'warning'
     })
@@ -279,11 +279,22 @@ const handleReject = (row) => {
 // 确认退回
 const confirmReject = async () => {
   try {
+    // 二次确认
+    await ElMessageBox.confirm('确定要退回这条记录吗？退回后用户需要重新修改并提交。', '确认退回', {
+      confirmButtonText: '确定退回',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
     await rejectRecord(rejectForm)
     ElMessage.success('退回成功')
     showRejectDialog.value = false
     loadRecords()
   } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消操作，不做任何处理
+      return
+    }
     console.error('退回失败:', error)
   }
 }

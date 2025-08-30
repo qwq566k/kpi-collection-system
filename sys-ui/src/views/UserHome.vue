@@ -669,6 +669,13 @@ const handleSubmit = async () => {
     // 先进行表单验证
     await formRef.value.validate()
     
+    // 二次确认
+    await ElMessageBox.confirm('确定要提交审核吗？提交后将进入审核流程，无法再修改。', '确认提交', {
+      confirmButtonText: '确定提交',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
     // 验证通过，发起请求
     const submitData = { ...form }
     delete submitData.evidenceFileName // 删除不需要的字段
@@ -697,6 +704,10 @@ const handleSubmit = async () => {
     })
     formRef.value.resetFields()
   } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消操作，不做任何处理
+      return
+    }
     if (error.message) {
       // 这是验证错误，显示具体的验证失败信息
       ElMessage.error(error.message)
@@ -910,16 +921,27 @@ const handleEditSubmit = async () => {
     // 先进行表单验证
     await editFormRef.value.validate()
     
-          editLoading.value = true
-      const payload = { ...editForm, status: 1 }
-      delete payload.evidenceFileName // 删除不需要的字段
-      await updateRecord(payload)
+    // 二次确认
+    await ElMessageBox.confirm('确定要提交审核吗？提交后将进入审核流程，无法再修改。', '确认提交', {
+      confirmButtonText: '确定提交',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    editLoading.value = true
+    const payload = { ...editForm, status: 1 }
+    delete payload.evidenceFileName // 删除不需要的字段
+    await updateRecord(payload)
     ElMessage.success('提交审核成功')
     showEditDialog.value = false
     loadRecords()
     // 清除编辑表单验证状态
     editFormRef.value.clearValidate()
   } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消操作，不做任何处理
+      return
+    }
     if (error.message) {
       // 这是验证错误，显示具体的验证失败信息
       ElMessage.error(error.message)

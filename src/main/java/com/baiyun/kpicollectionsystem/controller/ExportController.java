@@ -6,6 +6,7 @@ import com.baiyun.kpicollectionsystem.entity.ResearchAchievement;
 import com.baiyun.kpicollectionsystem.mapper.ResearchAchievementMapper;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -63,32 +64,29 @@ public class ExportController {
 		}
 		XSSFWorkbook wb = new XSSFWorkbook();
 		Sheet sheet = wb.createSheet("成果");
+		//序号 部门 成果名称 团队负责人 团队成员 获得日期 考核领域 关键成效指标 评价标准 分值 赋分说明 考核组织部门
 		int r = 0;
 		Row head = sheet.createRow(r++);
-		head.createCell(0).setCellValue("ID");
-		head.createCell(1).setCellValue("年度");
-		head.createCell(2).setCellValue("部门");
-		head.createCell(3).setCellValue("提交人");
-		head.createCell(4).setCellValue("成果名称");
-		head.createCell(5).setCellValue("领域");
-		head.createCell(6).setCellValue("指标");
-		head.createCell(7).setCellValue("标准");
-		head.createCell(8).setCellValue("得分");
-		head.createCell(9).setCellValue("状态");
+		String[] headList = {"序号", "部门", "成果名称", "团队负责人", "团队成员", "获得日期", "考核领域", "关键成效指标", "评价标准", "分值", "赋分说明", "考核组织部门"};
+		for (int i = 0; i < headList.length; i++) {
+			head.createCell(i).setCellValue(headList[i]);
+		}
+
 		for (ResearchAchievement ra : list) {
 			if (ra.getStatus() != 2)	continue;
 			Row row = sheet.createRow(r++);
-			row.createCell(0).setCellValue(ra.getId());
-			row.createCell(1).setCellValue(ra.getYear());
-			row.createCell(2).setCellValue(ra.getDepartment());
+			row.createCell(0).setCellValue(r-1);
+			row.createCell(1).setCellValue(ra.getDepartment());
+			row.createCell(2).setCellValue(ra.getAchievementName());
 			row.createCell(3).setCellValue(ra.getSubmitterName());
-			row.createCell(4).setCellValue(ra.getAchievementName());
-			row.createCell(5).setCellValue(ra.getFieldName());
-			row.createCell(6).setCellValue(ra.getIndicatorName());
-			row.createCell(7).setCellValue(ra.getStandardName());
-			row.createCell(8).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
-//			row.createCell(9).setCellValue(ra.getStatus());
-			row.createCell(9).setCellValue(convertStatusToText(ra.getStatus()));
+			row.createCell(4).setCellValue(ra.getTeamMembers() == null ? "" : ra.getTeamMembers().toString());
+			row.createCell(5).setCellValue(ra.getObtainDate());
+			row.createCell(6).setCellValue(ra.getFieldName());
+			row.createCell(7).setCellValue(ra.getIndicatorName());
+			row.createCell(8).setCellValue(ra.getStandardName());
+			row.createCell(9).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
+//			row.createCell(10).setCellValue(ra.get());
+//			row.createCell(11).setCellValue(ra.get());
 		}
 		String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 		Path dir = Paths.get(uploadDir, today);
