@@ -651,8 +651,15 @@ const handleSaveDraft = async () => {
     await saveDraft(submitData)
     ElMessage.success('保存草稿成功')
     loadRecords()
-    // 清除表单验证状态，但保留用户填写的内容
-    formRef.value?.clearValidate()
+    // 仅清除表单校验状态，不重置字段
+    formRef.value?.resetFields()
+    // 重设提交人，避免被 resetFields 清空
+    const __info = getUserInfo()
+    if (__info) {
+      form.submitterId = __info.id || ''
+      form.submitterName = __info.name || ''
+    }
+
   } catch (error) {
     if (error.message) {
       // 这是验证错误，显示具体的验证失败信息
@@ -705,7 +712,6 @@ const handleSubmit = async () => {
       evidenceFile: '',
       evidenceFileName: ''
     })
-    formRef.value.resetFields()
   } catch (error) {
     if (error === 'cancel') {
       // 用户取消操作，不做任何处理
@@ -727,6 +733,15 @@ const handleEdit = (row) => {
   Object.assign(editForm, row)
   const field = fields.value.find(f => f.areaId === row.fieldId)
   editForm.fieldName = field ? field.areaName : row.fieldName
+  // 回显已保存的附件：Element Plus 需要 { name, url }
+  if (row && row.evidenceFile) {
+    editFileList.value = [{
+      name: getFileName(row.evidenceFile),
+      url: resolveFileUrl(row.evidenceFile)
+    }]
+  } else {
+    editFileList.value = []
+  }
   // 联动加载
   handleFieldChange(row.fieldId)
     .then(() => handleIndicatorChange(row.indicatorId))
