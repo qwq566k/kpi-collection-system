@@ -13,6 +13,9 @@ import com.baiyun.kpicollectionsystem.mapper.ResearchAchievementMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +60,9 @@ public class AdminController {
 	public Result<Void> approve(@RequestParam Integer id) {
 		ResearchAchievement ra = mapper.selectById(id);
 		if (ra == null) return Result.failure("记录不存在");
+		//获取当前登录的用户信息
+		String userAuthentication = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+		String[] userNameAndId = userAuthentication.split("#");
 		//设置个人分值
 		ScoreStandard standard = standardMapper.selectById(ra.getStandardId());
 		ra.setScore(standard.getScore());
@@ -69,7 +75,8 @@ public class AdminController {
 		ra.setAssessmentOrg(standardMapper.selectOrgById(ra.getStandardId()));
 		ra.setRejectReason(null);
 		ra.setReviewedAt(LocalDateTime.now());
-
+		ra.setReviewerId(Integer.valueOf(userNameAndId[1]));
+		ra.setReviewerName(userNameAndId[0]);
 		mapper.updateById(ra);
 		fieldMapper.updateById(field);
 		return Result.success();
