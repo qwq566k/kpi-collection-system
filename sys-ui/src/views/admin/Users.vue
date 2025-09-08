@@ -172,20 +172,7 @@
           </div>
         </template>
       </el-upload>
-      
-      <div v-if="importResult" class="import-result">
-        <h4>导入结果：</h4>
-        <p>成功导入：{{ importResult.successCount }} 条</p>
-        <p>失败：{{ importResult.failCount }} 条</p>
-        <div v-if="importResult.failList && importResult.failList.length > 0">
-          <h5>失败详情：</h5>
-          <ul>
-            <li v-for="item in importResult.failList" :key="item.row">
-              第{{ item.row }}行：{{ item.reason }}
-            </li>
-          </ul>
-        </div>
-      </div>
+
       
       <template #footer>
         <el-button @click="showImportDialog = false">取消</el-button>
@@ -384,7 +371,10 @@ const handleFileChange = (file) => {
 
 // 导入Excel
 const handleImport = async () => {
-  if (!selectedFile.value) return
+  if (!selectedFile.value) {
+    ElMessage.warning('请先选择Excel文件')
+    return
+  }
   
   try {
     const formData = new FormData()
@@ -399,7 +389,7 @@ const handleImport = async () => {
     }
   } catch (error) {
     console.error('导入失败:', error)
-    ElMessage.error('导入失败')
+    ElMessage.error('导入失败: ' + (error.response?.data?.message || error.message))
   }
 }
 

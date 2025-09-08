@@ -18,6 +18,7 @@
 --
 -- Table structure for table `assessment_fields`
 --
+use kpicollectionsystem;
 
 DROP TABLE IF EXISTS `assessment_fields`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -344,7 +345,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_employee_id` (`employee_id`),
   KEY `idx_department` (`department`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

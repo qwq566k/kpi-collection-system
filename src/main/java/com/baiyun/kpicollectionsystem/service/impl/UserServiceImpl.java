@@ -7,6 +7,8 @@ import com.baiyun.kpicollectionsystem.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -30,6 +32,11 @@ public class UserServiceImpl implements UserService {
 		u.setPassword(passwordEncoder.encode(rawPassword));
 		usersMapper.updateById(u);
 	}
+
+	@Override
+	public void saveBatch(List<Users> users) {
+        usersMapper.saveBatch(users);
+    }
 }
 
 

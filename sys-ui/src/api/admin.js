@@ -54,7 +54,11 @@ export const addUser = (data) => {
 
 // 用户管理-批量导入
 export const importUsers = (data) => {
-  return api.post('/importUsers', data)
+  return api.post('/importUsers', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
 }
 
 // 用户管理-编辑用户

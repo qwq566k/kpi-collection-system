@@ -1,5 +1,8 @@
 package com.baiyun.kpicollectionsystem.controller;
 
+import cn.hutool.poi.excel.ExcelReader;
+import cn.hutool.poi.excel.ExcelUtil;
+import com.baiyun.kpicollectionsystem.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -10,20 +13,28 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class UserManageController {
 
 	private final UsersMapper usersMapper;
 	private final PasswordEncoder passwordEncoder;
+	@Autowired
+	private UserService userService;
 
 	public UserManageController(UsersMapper usersMapper, PasswordEncoder passwordEncoder) {
 		this.usersMapper = usersMapper;
@@ -80,22 +91,46 @@ public class UserManageController {
 		return Result.success();
 	}
 
+	@Transactional(rollbackFor = Exception.class)
 	@PostMapping("/importUsers")
-	public Result<Map<String, Object>> importUsers(MultipartFile file) {
-		int success = 0;
-		int fail = 0;
-		try (InputStream is = file.getInputStream()) {
-			// TODO: 使用 Apache POI 解析Excel，这里先返回占位统计
-			success = 0;
-			fail = 0;
+	public Result<String> importUsers(@RequestParam(value = "file", required = false) MultipartFile file) {
+		// TODO: 使用 Apache POI 解析Excel，这里先返回占位统计
+		try {
+			//检查文件是否为空
+			if (file.isEmpty()) {
+				return Result.failure("文件为空");
+			}
+			//检查文件类型
+			String fileNme = file.getOriginalFilename();
+			if (fileNme != null && !fileNme.endsWith(".xls") && !fileNme.endsWith(".xlsx")) {
+				return Result.failure("只支持Excel文件");
+			}
+			//读取文件
+			ExcelReader reader = ExcelUtil.getReader(file.getInputStream());
+			reader.addHeaderAlias("用户名", "username");
+			reader.addHeaderAlias("密码", "password");
+			reader.addHeaderAlias("工号", "employeeId");
+			reader.addHeaderAlias("名字", "name");
+			reader.addHeaderAlias("手机号", "phone");
+			reader.addHeaderAlias("部门", "department");
+			//处理其他字段
+			List<Users> users = reader.readAll(Users.class);
+			for (Users user : users) {
+				user.setStatus(1);
+				user.setCreatedAt(LocalDateTime.now());
+				user.setUpdatedAt(LocalDateTime.now());
+			}
+			//批量保存数据
+			if(users.isEmpty()){
+				return Result.failure("数据为空");
+			}
+			userService.saveBatch(users);
 		} catch (Exception e) {
-			return Result.failure("导入失败: " + e.getMessage());
+			log.info(e.getMessage());
+			return Result.failure("请求超时");
 		}
-		Map<String, Object> data = new HashMap<>();
-		data.put("successCount", success);
-		data.put("failCount", fail);
-		data.put("failList", java.util.List.of());
-		return Result.success(data);
+
+		return Result.success("操作成功");
 	}
 
 	@Data
