@@ -49,10 +49,10 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.formLogin(form -> form.disable());
-		http.logout(logout -> logout.disable());
-		http.csrf(csrf -> csrf.disable());
-		http.sessionManagement(mgr -> mgr.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+		http.formLogin(form -> form.disable())
+			.logout(logout -> logout.disable())
+			.csrf(csrf -> csrf.disable())
+			.sessionManagement(mgr -> mgr.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 //		http.authorizeHttpRequests(registry -> registry
 //				.requestMatchers("/health", "/api/user/login", "/api/uploadFile").permitAll()
 //				.requestMatchers("/upload/**", "/export/**").permitAll()

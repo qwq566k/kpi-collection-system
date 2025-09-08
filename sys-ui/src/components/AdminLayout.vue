@@ -145,10 +145,14 @@ const handleChangePassword = async () => {
       id: userId,
       newPassword: passwordForm.newPassword
     })
-    ElMessage.success('密码修改成功')
+    ElMessage.success('密码修改成功，请重新登录')
     showChangePassword.value = false
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
+    // 清除本地存储的用户信息
+    localStorage.clear()
+    // 跳转到登录页面
+    router.push('/login')
   } catch (error) {
     console.error('修改密码失败:', error)
   }

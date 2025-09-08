@@ -38,7 +38,6 @@
               clearable
               style="width: 200px"
             >
-              <el-option label="草稿" :value="0" />
               <el-option label="审核中" :value="1" />
               <el-option label="已通过" :value="2" />
               <el-option label="已退回" :value="3" />
