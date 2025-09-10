@@ -5,6 +5,7 @@ import com.baiyun.kpicollectionsystem.entity.ScoreStandard;
 import com.baiyun.kpicollectionsystem.mapper.AssessmentFieldMapper;
 import com.baiyun.kpicollectionsystem.mapper.ScoreStandardMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baiyun.kpicollectionsystem.common.Result;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,41 +60,96 @@ public class AdminController {
 	@PutMapping("/approveRecord")
 	@Transactional(rollbackFor = Exception.class)
 	public Result<Void> approve(@RequestParam Integer id) {
-		ResearchAchievement ra = mapper.selectById(id);
-		if (ra == null) return Result.failure("记录不存在");
-		//获取当前登录的用户信息
-		String userAuthentication = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-		String[] userNameAndId = userAuthentication.split("#");
-		//设置个人分值
-		ScoreStandard standard = standardMapper.selectById(ra.getStandardId());
-		ra.setScore(standard.getScore());
-		//设置邻域分值
-		AssessmentField field = fieldMapper.selectById(ra.getFieldId());
-		field.setScore(field.getScore() + standard.getScore());
-		//设置记录的状态
-		ra.setStatus(2);
-		ra.setScoringInstruction(standardMapper.selectInstructionById(ra.getStandardId()));
-		ra.setAssessmentOrg(standardMapper.selectOrgById(ra.getStandardId()));
-		ra.setRejectReason(null);
-		ra.setReviewedAt(LocalDateTime.now());
-		ra.setReviewerId(Integer.valueOf(userNameAndId[1]));
-		ra.setReviewerName(userNameAndId[0]);
-		mapper.updateById(ra);
-		fieldMapper.updateById(field);
-		return Result.success();
+		// 1. 使用CAS方式获取操作权：从状态1改为-1
+		boolean lockAcquired = acquireOperationLock(id);
+		if (!lockAcquired) {
+			return Result.failure("记录不存在或正在被其他审核员操作");
+		}
+
+		try {
+			// 2. 查询记录信息
+			ResearchAchievement ra = mapper.selectById(id);
+			if (ra == null) {
+				throw new RuntimeException("记录不存在");
+			}
+
+			// 3. 获取当前登录用户信息
+			String userAuthentication = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+			String[] userNameAndId = userAuthentication.split("#");
+			Integer reviewerId = Integer.valueOf(userNameAndId[1]);
+			String reviewerName = userNameAndId[0];
+
+			// 4. 获取评分标准
+			ScoreStandard standard = standardMapper.selectById(ra.getStandardId());
+
+			// 5. 更新领域分值
+			boolean fieldUpdated = incrementFieldScore(ra.getFieldId(), standard.getScore());
+			if (!fieldUpdated) {
+				throw new RuntimeException("更新领域分值失败");
+			}
+
+			// 6. 获取其他必要信息
+			String scoringInstruction = standardMapper.selectInstructionById(ra.getStandardId());
+			String assessmentOrg = standardMapper.selectOrgById(ra.getStandardId());
+
+			// 7. 完成审核操作：从状态-1改为2
+			boolean operationCompleted = completeApproveOperation(
+					id, standard.getScore(), scoringInstruction, assessmentOrg,
+					reviewerId, reviewerName, LocalDateTime.now()
+			);
+
+			if (!operationCompleted) {
+				throw new RuntimeException("审核操作失败");
+			}
+
+			return Result.success();
+
+		} catch (Exception e) {
+			// 发生异常时释放操作锁
+			releaseOperationLock(id);
+			return Result.failure("审核失败: " + e.getMessage());
+		}
 	}
 
 	@PreAuthorize("hasRole('admin')")
 	@PutMapping("/rejectRecord")
+	@Transactional(rollbackFor = Exception.class)
 	public Result<Void> reject(@RequestBody RejectReq req) {
-		ResearchAchievement ra = mapper.selectById(req.getId());
-		if (ra == null) return Result.failure("记录不存在");
-		if (req.getRejectReason() == null || req.getRejectReason().isBlank()) return Result.failure("退回原因必填");
-		ra.setStatus(3);
-		ra.setRejectReason(req.getRejectReason());
-		ra.setReviewedAt(LocalDateTime.now());
-		mapper.updateById(ra);
-		return Result.success();
+		// 验证参数
+		if (req.getRejectReason() == null || req.getRejectReason().isBlank()) {
+			return Result.failure("退回原因必填");
+		}
+
+		// 1. 使用CAS方式获取操作权
+		boolean lockAcquired = acquireOperationLock(req.getId());
+		if (!lockAcquired) {
+			return Result.failure("记录不存在或正在被其他审核员操作");
+		}
+
+		try {
+			// 2. 获取当前登录用户信息
+			String userAuthentication = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+			String[] userNameAndId = userAuthentication.split("#");
+			Integer reviewerId = Integer.valueOf(userNameAndId[1]);
+			String reviewerName = userNameAndId[0];
+
+			// 3. 完成拒绝操作：从状态-1改为3
+			boolean operationCompleted = completeRejectOperation(
+					req.getId(), req.getRejectReason(),
+					reviewerId, reviewerName, LocalDateTime.now()
+			);
+
+			if (!operationCompleted) {
+				throw new RuntimeException("拒绝操作失败");
+			}
+
+			return Result.success();
+
+		} catch (Exception e) {
+			// 发生异常时释放操作锁
+			releaseOperationLock(req.getId());
+			return Result.failure("拒绝操作失败: " + e.getMessage());
+		}
 	}
 
 	@PreAuthorize("hasRole('admin')")
@@ -125,6 +182,86 @@ public class AdminController {
 		return Result.success(mapper.selectSubmitterStats());
 	}
 
+	/**
+	 * 获取操作锁：从状态1改为-1
+	 */
+	private boolean acquireOperationLock(Integer id) {
+		UpdateWrapper<ResearchAchievement> updateWrapper = new UpdateWrapper<>();
+		updateWrapper.eq("id", id)
+				.eq("status", 1)  // 只有状态为1时才能获取锁
+				.set("status", -1)
+				.set("updated_at", new Date());
+
+		return mapper.update(null, updateWrapper) > 0;
+	}
+
+	/**
+	 * 完成审核操作：从状态-1改为2
+	 */
+	private boolean completeApproveOperation(Integer id, Integer score,
+											 String scoringInstruction, String assessmentOrg,
+											 Integer reviewerId, String reviewerName,
+											 LocalDateTime reviewedAt) {
+		UpdateWrapper<ResearchAchievement> updateWrapper = new UpdateWrapper<>();
+		updateWrapper.eq("id", id)
+				.eq("status", -1)  // 只有状态为-1时才能完成操作
+				.set("status", 2)
+				.set("score", score)
+				.set("scoring_instruction", scoringInstruction)
+				.set("assessment_org", assessmentOrg)
+				.set("reject_reason", null)
+				.set("reviewer_id", reviewerId)
+				.set("reviewer_name", reviewerName)
+				.set("reviewed_at", reviewedAt)
+				.set("updated_at", new Date());
+
+		return mapper.update(null, updateWrapper) > 0;
+	}
+
+	/**
+	 * 完成拒绝操作：从状态-1改为3
+	 */
+	private boolean completeRejectOperation(Integer id, String rejectReason,
+											Integer reviewerId, String reviewerName,
+											LocalDateTime reviewedAt) {
+		UpdateWrapper<ResearchAchievement> updateWrapper = new UpdateWrapper<>();
+		updateWrapper.eq("id", id)
+				.eq("status", -1)  // 只有状态为-1时才能完成操作
+				.set("status", 3)
+				.set("reject_reason", rejectReason)
+				.set("reviewer_id", reviewerId)
+				.set("reviewer_name", reviewerName)
+				.set("reviewed_at", reviewedAt)
+				.set("updated_at", new Date());
+
+		return mapper.update(null, updateWrapper) > 0;
+	}
+
+	/**
+	 * 释放操作锁：从状态-1改回1
+	 */
+	private boolean releaseOperationLock(Integer id) {
+		UpdateWrapper<ResearchAchievement> updateWrapper = new UpdateWrapper<>();
+		updateWrapper.eq("id", id)
+				.eq("status", -1)  // 只有状态为-1时才能释放锁
+				.set("status", 1)
+				.set("updated_at", new Date());
+
+		return mapper.update(null, updateWrapper) > 0;
+	}
+
+	/**
+	 * 原子增加领域分值
+	 */
+	private boolean incrementFieldScore(Integer fieldId, Integer increment) {
+		// 假设 AssessmentField 也有对应的 mapper
+		UpdateWrapper<AssessmentField> updateWrapper = new UpdateWrapper<>();
+		updateWrapper.eq("id", fieldId)
+				.setSql("score = score + " + increment)
+				.set("updated_at", new Date());
+
+		return fieldMapper.update(null, updateWrapper) > 0;
+	}
 
 	@Data
 	public static class QueryReq {
