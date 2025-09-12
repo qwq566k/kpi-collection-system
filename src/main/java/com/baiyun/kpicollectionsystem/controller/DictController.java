@@ -1,5 +1,6 @@
 package com.baiyun.kpicollectionsystem.controller;
 
+import com.baiyun.kpicollectionsystem.mapper.AssessmentRelationMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baiyun.kpicollectionsystem.common.Result;
 import com.baiyun.kpicollectionsystem.entity.AssessmentField;
@@ -23,13 +24,15 @@ import java.util.Map;
 public class DictController {
 
 	private final AssessmentFieldMapper fieldMapper;
-	private final KeyIndicatorMapper indicatorMapper;
-	private final ScoreStandardMapper standardMapper;
+	private final AssessmentRelationMapper relationMapper;
+//	private final KeyIndicatorMapper indicatorMapper;
+//	private final ScoreStandardMapper standardMapper;
 
-	public DictController(AssessmentFieldMapper fieldMapper, KeyIndicatorMapper indicatorMapper, ScoreStandardMapper standardMapper) {
+	public DictController(AssessmentFieldMapper fieldMapper, KeyIndicatorMapper indicatorMapper, AssessmentRelationMapper relationMapper, ScoreStandardMapper standardMapper) {
 		this.fieldMapper = fieldMapper;
-		this.indicatorMapper = indicatorMapper;
-		this.standardMapper = standardMapper;
+        this.relationMapper = relationMapper;
+//        this.indicatorMapper = indicatorMapper;
+//		this.standardMapper = standardMapper;
 	}
 
 	@GetMapping("/getAllField")
@@ -47,7 +50,7 @@ public class DictController {
 
 	@GetMapping("/getKeyIndicators")
 	public Result<List<Map<String, Object>>> indicators(@RequestParam("fieldId") Integer fieldId) {
-		List<KeyIndicator> list = indicatorMapper.selectList(new LambdaQueryWrapper<KeyIndicator>().eq(KeyIndicator::getStatus, 1));
+		List<KeyIndicator> list = relationMapper.selectIndicatorsListByFieldId(fieldId);
 		List<Map<String, Object>> res = new ArrayList<>();
 		for (KeyIndicator i : list) {
 			Map<String, Object> m = new HashMap<>();
@@ -60,7 +63,7 @@ public class DictController {
 
 	@GetMapping("/getStandards")
 	public Result<List<Map<String, Object>>> standards(@RequestParam Integer indicatorId) {
-		List<ScoreStandard> list = standardMapper.selectList(new LambdaQueryWrapper<ScoreStandard>().eq(ScoreStandard::getStatus, 1));
+		List<ScoreStandard> list = relationMapper.selectStandardsListByIndicatorId(indicatorId);
 		List<Map<String, Object>> res = new ArrayList<>();
 		for (ScoreStandard s : list) {
 			Map<String, Object> m = new HashMap<>();

@@ -34,4 +34,4 @@ app:
     secret: ReplaceWithAStrongSecretKey_ChangeMe
     expire-seconds: 2592000
   file:
-    upload-dir: ${user.home}/kpi-uploads
+    upload-dir: ${user.dir}/kpi-uploads-file

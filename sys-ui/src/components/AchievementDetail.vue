@@ -131,6 +131,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
+import { downloadByPath } from '../api/common'
 
 const visible = ref(false)
 const achievement = reactive({})
@@ -171,18 +172,25 @@ const resolveFileUrl = (file) => {
   return `/api/files/${encodeURIComponent(file)}`
 }
 
-const downloadFile = (file) => {
-  const url = resolveFileUrl(file)
-  if (!url) {
+const downloadFile = async (file) => {
+  const path = typeof file === 'string' ? file : ''
+  if (!path) {
     ElMessage.warning('没有可下载的附件')
     return
   }
-  const link = document.createElement('a')
-  link.href = url
-  link.download = getFileName(file)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  try {
+    const blob = await downloadByPath(path)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = getFileName(path)
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('下载失败，请稍后重试')
+  }
 }
 
 // 获取文件名

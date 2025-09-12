@@ -88,13 +88,13 @@ public class AdminController {
 				throw new RuntimeException("更新领域分值失败");
 			}
 
-			// 6. 获取其他必要信息
-			String scoringInstruction = standardMapper.selectInstructionById(ra.getStandardId());
-			String assessmentOrg = standardMapper.selectOrgById(ra.getStandardId());
+//			// 6. 获取其他必要信息
+//			String scoringInstruction = standardMapper.selectInstructionById(ra.getStandardId());
+//			String assessmentOrg = standardMapper.selectOrgById(ra.getStandardId());
 
 			// 7. 完成审核操作：从状态-1改为2
 			boolean operationCompleted = completeApproveOperation(
-					id, standard.getScore(), scoringInstruction, assessmentOrg,
+					id, standard.getScore(),
 					reviewerId, reviewerName, LocalDateTime.now()
 			);
 
@@ -155,10 +155,10 @@ public class AdminController {
 	@PreAuthorize("hasRole('admin')")
 	@GetMapping("/getSubmissionStats")
 	public Result<Map<String, Object>> submissionStats() {
-		long total = mapper.selectCount(null);
 		long pending = mapper.selectCount(new LambdaQueryWrapper<ResearchAchievement>().eq(ResearchAchievement::getStatus, 1));
 		long approved = mapper.selectCount(new LambdaQueryWrapper<ResearchAchievement>().eq(ResearchAchievement::getStatus, 2));
 		long rejected = mapper.selectCount(new LambdaQueryWrapper<ResearchAchievement>().eq(ResearchAchievement::getStatus, 3));
+		long total = pending + approved + rejected;
 		Integer totalScore = mapper.selectList(new LambdaQueryWrapper<ResearchAchievement>().eq(ResearchAchievement::getStatus, 2))
 				.stream().map(ResearchAchievement::getScore).filter(s -> s != null).mapToInt(Integer::intValue).sum();
 		Map<String, Object> data = new HashMap<>();
@@ -199,7 +199,7 @@ public class AdminController {
 	 * 完成审核操作：从状态-1改为2
 	 */
 	private boolean completeApproveOperation(Integer id, Integer score,
-											 String scoringInstruction, String assessmentOrg,
+
 											 Integer reviewerId, String reviewerName,
 											 LocalDateTime reviewedAt) {
 		UpdateWrapper<ResearchAchievement> updateWrapper = new UpdateWrapper<>();
@@ -207,8 +207,7 @@ public class AdminController {
 				.eq("status", -1)  // 只有状态为-1时才能完成操作
 				.set("status", 2)
 				.set("score", score)
-				.set("scoring_instruction", scoringInstruction)
-				.set("assessment_org", assessmentOrg)
+
 				.set("reject_reason", null)
 				.set("reviewer_id", reviewerId)
 				.set("reviewer_name", reviewerName)

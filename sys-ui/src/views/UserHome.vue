@@ -58,6 +58,7 @@
                   placeholder="yyyy/mm/日"
                   format="YYYY/MM/DD"
                   value-format="YYYY-MM-DD"
+                  :disabled-date="disabledDate"
                   style="width: 100%"
                 />
               </el-form-item>
@@ -305,6 +306,7 @@
                 placeholder="yyyy/mm/日"
                 format="YYYY/MM/DD"
                 value-format="YYYY-MM-DD"
+                :disabled-date="disabledDate"
                 style="width: 100%"
               />
             </el-form-item>
@@ -377,7 +379,7 @@
 
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item label="佐证材料" prop="evidenceMaterial">
+            <el-form-item label="佐证材料" prop="evidenceFile">
               <div class="upload-container">
                 <el-upload
                   ref="editUploadRef"
@@ -429,6 +431,7 @@ import {
 import { getAllField, getKeyIndicators, getStandards, uploadFile } from '../api/common'
 import { getUserInfo } from '../utils/auth'
 import AchievementDetail from '../components/AchievementDetail.vue'
+import { downloadByPath } from '../api/common'
 
 const router = useRouter()
 
@@ -597,26 +600,37 @@ const handleStandardChange = (standardId) => {
   }
 }
 
-// 文件变化
-const handleFileChange = (file) => {
-  if (file && file.raw) {
-    form.evidenceFile = file.name // 保存文件名用于提交给后端
-    form.evidenceFileName = file.name // 保存文件名用于显示
-    // 更新文件列表显示
-    fileList.value = [file]
-    // 手动触发验证
-    formRef.value?.validateField('evidenceFile')
+// 文件变化：选中文件即上传，保存后端返回的路径
+const handleFileChange = async (file) => {
+  if (!file || !file.raw) return
+    try {
+      const fd = new FormData()
+      fd.append('file', file.raw)
+      const res = await uploadFile(fd)
+      const url = res?.fileUrl || ''
+      form.evidenceFile = url
+      form.evidenceFileName = file.name
+      // 更新文件列表显示（带可访问的URL）
+      fileList.value = [{ ...file, url: resolveFileUrl(url) }]
+      formRef.value?.validateField('evidenceFile')
+    } catch (e) {
+      ElMessage.error('上传附件失败，请重试')
   }
 }
 const editFileList = ref([])
-const handleEditFileChange = (file) => {
-  if (file && file.raw) {
-    editForm.evidenceFile = file.name // 保存文件名用于提交给后端
-    editForm.evidenceFileName = file.name // 保存文件名用于显示
-    // 更新文件列表显示
-    editFileList.value = [file]
-    // 手动触发验证
+const handleEditFileChange = async (file) => {
+  if (!file || !file.raw) return
+  try {
+    const fd = new FormData()
+    fd.append('file', file.raw)
+    const res = await uploadFile(fd)
+    const url = res?.fileUrl || ''
+    editForm.evidenceFile = url
+    editForm.evidenceFileName = file.name
+    editFileList.value = [{ ...file, url: resolveFileUrl(url) }]
     editFormRef.value?.validateField('evidenceFile')
+  } catch (e) {
+    ElMessage.error('上传附件失败，请重试')
   }
 }
 
@@ -642,10 +656,7 @@ const handleSaveDraft = async () => {
   if (!formRef.value) return
   
   try {
-    // 先进行表单验证
-    await formRef.value.validate()
-    
-    // 验证通过，发起请求
+    // 直接发起请求，不进行表单验证
     const submitData = { ...form }
     delete submitData.evidenceFileName // 删除不需要的字段
     await saveDraft(submitData)
@@ -661,13 +672,8 @@ const handleSaveDraft = async () => {
     }
 
   } catch (error) {
-    if (error.message) {
-      // 这是验证错误，显示具体的验证失败信息
-      ElMessage.error(error.message)
-    } else {
-      console.error('保存草稿失败:', error)
-      ElMessage.error(getErrorMsg(error, '保存草稿失败'))
-    }
+    console.error('保存草稿失败:', error)
+    ElMessage.error(getErrorMsg(error, '保存草稿失败'))
   }
 }
 
@@ -680,10 +686,11 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     
     // 二次确认
-    await ElMessageBox.confirm('确定要提交审核吗？提交后将进入审核流程，无法再修改。', '确认提交', {
+    await ElMessageBox.confirm('确定要提交审核吗？<br>提交后将进入审核流程，无法再修改。', '确认提交', {
       confirmButtonText: '确定提交',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      dangerouslyUseHTMLString: true  //启用HTML解析
     })
     
     // 验证通过，发起请求
@@ -775,16 +782,23 @@ const resolveFileUrl = (file) => {
   return `/api/files/${encodeURIComponent(file)}`
 }
 
-// 下载文件
-const downloadFile = (file) => {
-  const url = resolveFileUrl(file)
-  if (!url) return
-  const link = document.createElement('a')
-  link.href = url
-  link.download = getFileName(file)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+// 下载文件（走后端接口，自动触发浏览器保存）
+const downloadFile = async (file) => {
+  const path = typeof file === 'string' ? file : ''
+  if (!path) return
+  try {
+    const blob = await downloadByPath(path)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = getFileName(path)
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('下载失败，请稍后重试')
+  }
 }
 
 // 获取文件名
@@ -819,6 +833,11 @@ const formatDate = (value) => {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+// 禁用今天之后的日期
+const disabledDate = (time) => {
+  return time.getTime() > Date.now()
 }
 
 // 编辑表单与规则
@@ -857,6 +876,20 @@ const editFormRules = {
   ],
   standardId: [
     { required: true, message: '请选择评价标准', trigger: 'change' }
+  ],
+  evidenceFile: [
+    { 
+      required: true, 
+      message: '请上传佐证材料', 
+      trigger: ['blur', 'change'],
+      validator: (rule, value, callback) => {
+        if (!value || value.trim() === '') {
+          callback(new Error('请上传佐证材料'))
+        } else {
+          callback()
+        }
+      }
+    }
   ]
 }
 
@@ -906,26 +939,18 @@ const handleEditSaveDraft = async () => {
   if (!editFormRef.value) return
   
   try {
-    // 先进行表单验证
-    await editFormRef.value.validate()
-    
-          editLoading.value = true
-      const payload = { ...editForm, status: 0 }
-      delete payload.evidenceFileName // 删除不需要的字段
-      await updateRecord(payload)
+    editLoading.value = true
+    const payload = { ...editForm, status: 0 }
+    delete payload.evidenceFileName // 删除不需要的字段
+    await updateRecord(payload)
     ElMessage.success('保存草稿成功')
     showEditDialog.value = false
     loadRecords()
     // 清除编辑表单验证状态
     editFormRef.value.clearValidate()
   } catch (error) {
-    if (error.message) {
-      // 这是验证错误，显示具体的验证失败信息
-      ElMessage.error(error.message)
-    } else {
-      console.error('编辑保存草稿失败:', error)
-      ElMessage.error(getErrorMsg(error, '保存草稿失败'))
-    }
+    console.error('编辑保存草稿失败:', error)
+    ElMessage.error(getErrorMsg(error, '保存草稿失败'))
   } finally {
     editLoading.value = false
   }
@@ -940,10 +965,11 @@ const handleEditSubmit = async () => {
     await editFormRef.value.validate()
     
     // 二次确认
-    await ElMessageBox.confirm('确定要提交审核吗？提交后将进入审核流程，无法再修改。', '确认提交', {
+    await ElMessageBox.confirm('确定要提交审核吗？<br>提交后将进入审核流程，无法再修改。', '确认提交', {
       confirmButtonText: '确定提交',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      dangerouslyUseHTMLString: true  //启用HTML解析
     })
     
     editLoading.value = true

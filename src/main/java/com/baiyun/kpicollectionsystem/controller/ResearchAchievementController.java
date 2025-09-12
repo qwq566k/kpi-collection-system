@@ -32,6 +32,9 @@ public class ResearchAchievementController {
 
 	@PostMapping("/saveDraft")
 	public Result<Void> saveDraft(@RequestBody @Valid ResearchAchievement req) {
+		if (req.getFieldId() == null || req.getIndicatorId() == null || req.getStandardId() == null){
+			return Result.failure("考核领域，关键指标，评价标准为必填项");
+		}
 		service.submit(req, true);
 		return Result.success();
 	}

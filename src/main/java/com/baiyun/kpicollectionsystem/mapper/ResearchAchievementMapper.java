@@ -14,7 +14,11 @@ public interface ResearchAchievementMapper extends BaseMapper<ResearchAchievemen
 	@Select("select name as fieldName, score from assessment_fields  group by name")
 	List<Map<String, Object>> selectAreaStats();
 
-	@Select("select submitter_name as submitterName, coalesce(sum(score),0) as score from research_achievements where status=2 group by submitter_name")
+	@Select("SELECT u.name as submitterName, COALESCE(SUM(ra.score), 0) as score " +
+			"FROM users u " +
+			"LEFT JOIN research_achievements ra ON u.id = ra.submitter_id AND ra.status = 2 " +
+			"GROUP BY u.id, u.name " +
+			"ORDER BY score DESC, u.name")
 	List<Map<String, Object>> selectSubmitterStats();
 }
 

@@ -24,4 +24,12 @@ export const uploadFile = (data) => {
   })
 }
 
+// 下载文件（通过后端下载接口，返回 blob 触发浏览器下载）
+export const downloadByPath = (path) => {
+  return api.get('/download', {
+    params: { path },
+    responseType: 'blob'
+  })
+}
+
 

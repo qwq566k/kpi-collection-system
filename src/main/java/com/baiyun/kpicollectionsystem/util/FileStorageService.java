@@ -20,6 +20,10 @@ public class FileStorageService {
 	@Value("${app.file.upload-dir}")
 	private String uploadDir;
 
+	public String getUploadRoot() {
+		return uploadDir;
+	}
+
 	public String store(MultipartFile file) throws IOException {
 		if (file == null || file.isEmpty()) {
 			throw new IllegalArgumentException("上传文件为空");
