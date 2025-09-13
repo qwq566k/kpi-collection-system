@@ -136,7 +136,8 @@
                   <el-upload
                     ref="uploadRef"
                     :auto-upload="false"
-                    :on-change="handleFileChange"
+                    :on-change="handleFileSelect"
+                    :on-remove="handleFileRemove"
                     :file-list="fileList"
                     :limit="1"
                     class="inline-upload"
@@ -148,16 +149,25 @@
             </el-col>
           </el-row>
           
-          <el-form-item class="form-buttons">
+          <div class="form-buttons">
             <el-button @click="handleSaveDraft">保存草稿</el-button>
             <el-button type="primary" @click="handleSubmit">提交审核</el-button>
-          </el-form-item>
+            <el-button @click="handleDownloadTemplate">下载模板</el-button>
+          </div>
         </el-form>
       </div>
 
       <!-- 我的提交记录 -->
       <div class="records-section">
-        <h3 class="section-title">我的提交记录</h3>
+        <div class="records-header">
+          <h3 class="section-title">我的提交记录</h3>
+          <div class="records-actions">
+            <el-button type="primary" text @click="handleRefreshRecords">
+              <el-icon><Refresh /></el-icon>
+              刷新
+            </el-button>
+          </div>
+        </div>
         <el-table :data="records" style="width: 100%">
           <el-table-column prop="achievementName" label="成果名称" />
           <el-table-column prop="fieldName" label="考核领域" />
@@ -194,9 +204,14 @@
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column label="提交日期">
+          <el-table-column label="获得日期">
             <template #default="{ row }">
               {{ formatDate(row.submitDate || row.obtainDate) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="提交日期" width="120">
+            <template #default="{ row }">
+              {{ formatDate(row.updatedAt) }}
             </template>
           </el-table-column>
           <el-table-column label="状态">
@@ -385,6 +400,7 @@
                   ref="editUploadRef"
                   :auto-upload="false"
                   :on-change="handleEditFileChange"
+                  :on-remove="handleEditFileRemove"
                   :file-list="editFileList"
                   :limit="1"
                   class="inline-upload"
@@ -418,7 +434,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Lock, SwitchButton } from '@element-plus/icons-vue'
+import { Lock, SwitchButton, Refresh } from '@element-plus/icons-vue'
 import { 
   submitRecord, 
   saveDraft, 
@@ -429,6 +445,7 @@ import {
   logout
 } from '../api/user'
 import { getAllField, getKeyIndicators, getStandards, uploadFile } from '../api/common'
+import { downloadTemplate } from '../api/common'
 import { getUserInfo } from '../utils/auth'
 import AchievementDetail from '../components/AchievementDetail.vue'
 import { downloadByPath } from '../api/common'
@@ -476,7 +493,8 @@ const formRules = {
       message: '请上传佐证材料', 
       trigger: ['blur', 'change'],
       validator: (rule, value, callback) => {
-        if (!value || value.trim() === '') {
+        // 检查是否有文件（File对象或文件路径字符串）
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
           callback(new Error('请上传佐证材料'))
         } else {
           callback()
@@ -600,38 +618,40 @@ const handleStandardChange = (standardId) => {
   }
 }
 
-// 文件变化：选中文件即上传，保存后端返回的路径
-const handleFileChange = async (file) => {
+// 文件选择：仅保存文件对象，不立即上传
+const handleFileSelect = (file) => {
   if (!file || !file.raw) return
-    try {
-      const fd = new FormData()
-      fd.append('file', file.raw)
-      const res = await uploadFile(fd)
-      const url = res?.fileUrl || ''
-      form.evidenceFile = url
-      form.evidenceFileName = file.name
-      // 更新文件列表显示（带可访问的URL）
-      fileList.value = [{ ...file, url: resolveFileUrl(url) }]
-      formRef.value?.validateField('evidenceFile')
-    } catch (e) {
-      ElMessage.error('上传附件失败，请重试')
-  }
+  // 保存原始文件对象和文件名
+  form.evidenceFile = file.raw
+  form.evidenceFileName = file.name
+  // 更新文件列表显示（显示原始文件名）
+  fileList.value = [{ ...file, name: file.name }]
+  formRef.value?.validateField('evidenceFile')
+}
+
+// 文件删除：清空文件相关数据
+const handleFileRemove = () => {
+  form.evidenceFile = ''
+  form.evidenceFileName = ''
+  fileList.value = []
+  formRef.value?.validateField('evidenceFile')
 }
 const editFileList = ref([])
-const handleEditFileChange = async (file) => {
+const handleEditFileChange = (file) => {
   if (!file || !file.raw) return
-  try {
-    const fd = new FormData()
-    fd.append('file', file.raw)
-    const res = await uploadFile(fd)
-    const url = res?.fileUrl || ''
-    editForm.evidenceFile = url
-    editForm.evidenceFileName = file.name
-    editFileList.value = [{ ...file, url: resolveFileUrl(url) }]
-    editFormRef.value?.validateField('evidenceFile')
-  } catch (e) {
-    ElMessage.error('上传附件失败，请重试')
-  }
+  // 保存原始文件对象和文件名
+  editForm.evidenceFile = file.raw
+  editForm.evidenceFileName = file.name
+  // 更新文件列表显示（显示原始文件名）
+  editFileList.value = [{ ...file, name: file.name }]
+  editFormRef.value?.validateField('evidenceFile')
+}
+
+const handleEditFileRemove = () => {
+  editForm.evidenceFile = ''
+  editForm.evidenceFileName = ''
+  editFileList.value = []
+  editFormRef.value?.validateField('evidenceFile')
 }
 
 // 获取记录列表
@@ -651,14 +671,38 @@ const loadRecords = async () => {
   }
 }
 
+// 上传文件到后端
+const uploadFileToServer = async (file) => {
+  if (!file) return ''
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await uploadFile(fd)
+    return res?.fileUrl || ''
+  } catch (e) {
+    ElMessage.error('上传附件失败，请重试')
+    throw e
+  }
+}
+
 // 保存草稿
 const handleSaveDraft = async () => {
   if (!formRef.value) return
   
   try {
-    // 直接发起请求，不进行表单验证
+    // 如果有文件，先上传文件
+    let fileUrl = ''
+    if (form.evidenceFile && form.evidenceFile instanceof File) {
+      fileUrl = await uploadFileToServer(form.evidenceFile)
+    }
+    
+    // 准备提交数据
     const submitData = { ...form }
+    if (fileUrl) {
+      submitData.evidenceFile = fileUrl
+    }
     delete submitData.evidenceFileName // 删除不需要的字段
+    
     await saveDraft(submitData)
     ElMessage.success('保存草稿成功')
     loadRecords()
@@ -693,9 +737,19 @@ const handleSubmit = async () => {
       dangerouslyUseHTMLString: true  //启用HTML解析
     })
     
-    // 验证通过，发起请求
+    // 如果有文件，先上传文件
+    let fileUrl = ''
+    if (form.evidenceFile && form.evidenceFile instanceof File) {
+      fileUrl = await uploadFileToServer(form.evidenceFile)
+    }
+    
+    // 准备提交数据
     const submitData = { ...form }
+    if (fileUrl) {
+      submitData.evidenceFile = fileUrl
+    }
     delete submitData.evidenceFileName // 删除不需要的字段
+    handleFileRemove()
     await submitRecord(submitData)
     ElMessage.success('提交审核成功')
     loadRecords()
@@ -883,7 +937,8 @@ const editFormRules = {
       message: '请上传佐证材料', 
       trigger: ['blur', 'change'],
       validator: (rule, value, callback) => {
-        if (!value || value.trim() === '') {
+        // 检查是否有文件（File对象或文件路径字符串）
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
           callback(new Error('请上传佐证材料'))
         } else {
           callback()
@@ -940,8 +995,20 @@ const handleEditSaveDraft = async () => {
   
   try {
     editLoading.value = true
+    
+    // 如果有文件，先上传文件
+    let fileUrl = ''
+    if (editForm.evidenceFile && editForm.evidenceFile instanceof File) {
+      fileUrl = await uploadFileToServer(editForm.evidenceFile)
+    }
+    
+    // 准备提交数据
     const payload = { ...editForm, status: 0 }
+    if (fileUrl) {
+      payload.evidenceFile = fileUrl
+    }
     delete payload.evidenceFileName // 删除不需要的字段
+    
     await updateRecord(payload)
     ElMessage.success('保存草稿成功')
     showEditDialog.value = false
@@ -973,8 +1040,20 @@ const handleEditSubmit = async () => {
     })
     
     editLoading.value = true
+    
+    // 如果有文件，先上传文件
+    let fileUrl = ''
+    if (editForm.evidenceFile && editForm.evidenceFile instanceof File) {
+      fileUrl = await uploadFileToServer(editForm.evidenceFile)
+    }
+    
+    // 准备提交数据
     const payload = { ...editForm, status: 1 }
+    if (fileUrl) {
+      payload.evidenceFile = fileUrl
+    }
     delete payload.evidenceFileName // 删除不需要的字段
+    
     await updateRecord(payload)
     ElMessage.success('提交审核成功')
     showEditDialog.value = false
@@ -1037,6 +1116,29 @@ const handleSizeChange = (size) => {
 const handleCurrentChange = (page) => {
   currentPage.value = page
   loadRecords()
+}
+
+// 手动刷新“我的提交记录”
+const handleRefreshRecords = () => {
+  loadRecords()
+}
+
+// 下载模板PDF（文件名可据需要更改）
+const handleDownloadTemplate = async () => {
+  try {
+    const filename = '二级学院关键办学指标年度工作成效评价办法（试行-发文稿）.pdf'
+    const blob = await downloadTemplate(filename)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('模板下载失败，请稍后重试')
+  }
 }
 
 // 修改密码
@@ -1161,12 +1263,24 @@ onMounted(() => {
   color: #333;
 }
 
+.records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.records-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .achievement-form {
   margin-bottom: 24px;
 }
 
 .form-buttons {
-  text-align: right;
+  text-align: center;
   margin-top: 24px;
 }
 

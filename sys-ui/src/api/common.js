@@ -32,4 +32,12 @@ export const downloadByPath = (path) => {
   })
 }
 
+// 下载后端模板PDF
+export const downloadTemplate = (name) => {
+  return api.get('/downloadTemplate', {
+    params: { name },
+    responseType: 'blob'
+  })
+}
+
 

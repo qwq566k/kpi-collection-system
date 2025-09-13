@@ -54,8 +54,8 @@
       <div class="table-section">
         <el-table :data="records" style="width: 100%">
           <el-table-column prop="year" label="年度" width="80" />
-          <el-table-column prop="department" label="部门" width="120" />
-          <el-table-column prop="submitterName" label="负责人" width="100" />
+          <el-table-column prop="department" label="部门" width="100" />
+          <el-table-column prop="submitterName" label="负责人" width="80" />
           <el-table-column prop="achievementName" label="成果名称" min-width="80" align="center"/>
           <el-table-column prop="fieldName" label="考核领域" width="120" />
           <el-table-column prop="indicatorName" label="关键指标" width="120" />
@@ -81,9 +81,24 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="提交日期" width="120">
+          <el-table-column label="佐证材料">
+            <template #default="{ row }">
+              <el-link 
+                type="primary" 
+                @click="downloadFile(row.evidenceFile)"
+              >
+                {{ getFileName(row.evidenceFile) }}
+              </el-link>
+            </template>
+          </el-table-column>
+          <el-table-column label="获得日期" width="120">
             <template #default="{ row }">
               {{ formatDate(row.submitDate || row.obtainDate) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="提交日期" width="120">
+            <template #default="{ row }">
+              {{ formatDate(row.updatedAt) }}
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100">
@@ -171,7 +186,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '../../components/AdminLayout.vue'
 import { queryRecords, approveRecord, rejectRecord } from '../../api/admin'
-import { getAllField } from '../../api/common'
+import { getAllField, downloadByPath } from '../../api/common'
 import { getRecordDetail } from '../../api/user'
 import AchievementDetail from '../../components/AchievementDetail.vue'
 
@@ -330,6 +345,25 @@ const getStatusText = (status) => {
   return statusMap[s] || '未知'
 }
 
+// 下载文件（走后端接口，自动触发浏览器保存）
+const downloadFile = async (file) => {
+  const path = typeof file === 'string' ? file : ''
+  if (!path) return
+  try {
+    const blob = await downloadByPath(path)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = getFileName(path)
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('下载失败，请稍后重试')
+  }
+}
+
 // 日期格式化
 const formatDate = (value) => {
   if (!value) return '-'
@@ -339,6 +373,28 @@ const formatDate = (value) => {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+// 获取文件名
+const getFileName = (file) => {
+  if (!file) return ''
+  
+  // 如果是文件对象
+  if (file instanceof File) {
+    return file.name
+  }
+  
+  // 如果是字符串（文件URL或文件名）
+  if (typeof file === 'string') {
+    // 如果包含路径分隔符，取最后一部分
+    if (file.includes('/')) {
+      return file.split('/').pop()
+    }
+    // 否则直接返回文件名
+    return file
+  }
+  
+  return ''
 }
 
 // 分页处理

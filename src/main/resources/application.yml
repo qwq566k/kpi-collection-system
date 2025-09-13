@@ -35,3 +35,5 @@ app:
     expire-seconds: 2592000
   file:
     upload-dir: ${user.dir}/kpi-uploads-file
+  template:
+    download-dir: ${user.dir}/kpi-download-template

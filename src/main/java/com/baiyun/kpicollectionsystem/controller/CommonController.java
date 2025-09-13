@@ -2,6 +2,7 @@ package com.baiyun.kpicollectionsystem.controller;
 
 import com.baiyun.kpicollectionsystem.common.Result;
 import com.baiyun.kpicollectionsystem.util.FileStorageService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.PathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,6 +27,9 @@ import java.util.Map;
 public class CommonController {
 
 	private final FileStorageService fileStorageService;
+
+	@Value("${app.template.download-dir}")
+	private String templateDir;
 
 	public CommonController(FileStorageService fileStorageService) {
 		this.fileStorageService = fileStorageService;
@@ -59,6 +63,26 @@ public class CommonController {
 		return ResponseEntity.ok()
 			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encoded + "\"; filename*=UTF-8''" + encoded)
 			.contentType(contentType != null ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM)
+			.body(resource);
+	}
+
+	@GetMapping("/downloadTemplate")
+	public ResponseEntity<PathResource> downloadTemplate(@RequestParam("name") String name) throws Exception {
+		if (name == null || name.isBlank()) {
+			return ResponseEntity.badRequest().build();
+		}
+		Path root = Paths.get(templateDir);
+		Files.createDirectories(root);
+		Path target = root.resolve(name).normalize();
+		if (!target.startsWith(root) || !Files.exists(target) || Files.isDirectory(target)) {
+			return ResponseEntity.notFound().build();
+		}
+		String filename = target.getFileName().toString();
+		String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+		PathResource resource = new PathResource(target);
+		return ResponseEntity.ok()
+			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encoded + "\"; filename*=UTF-8''" + encoded)
+			.contentType(MediaType.APPLICATION_PDF)
 			.body(resource);
 	}
 }

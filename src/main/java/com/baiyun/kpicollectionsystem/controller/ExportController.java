@@ -10,13 +10,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +39,8 @@ public class ExportController {
 
 	@Value("${app.file.upload-dir}")
 	private String uploadDir;
+	@Value("${app.template.download-dir}")
+	private String excelTemplateDir;
 
 	public ExportController(ResearchAchievementMapper mapper, ScoreStandardMapper standardMapper) {
 		this.mapper = mapper;
@@ -63,35 +69,72 @@ public class ExportController {
 			LambdaQueryWrapper<ResearchAchievement> qw = buildWrapperFromReq(req);
 			list = mapper.selectList(qw);
 		}
-		XSSFWorkbook wb = new XSSFWorkbook();
-		Sheet sheet = wb.createSheet("成果");
-		//序号 部门 成果名称 团队负责人 团队成员 获得日期 考核领域 关键成效指标 评价标准 分值 赋分说明 考核组织部门
-		int r = 0;
-		Row head = sheet.createRow(r++);
-		String[] headList = {"序号", "部门", "成果名称", "团队负责人", "团队成员", "获得日期", "考核领域", "关键成效指标", "评价标准", "分值", "赋分说明", "考核组织部门"};
-		for (int i = 0; i < headList.length; i++) {
-			head.createCell(i).setCellValue(headList[i]);
+
+		// 检查模板文件是否存在
+		String templatePath = excelTemplateDir + "/成果导出模板.xlsx";
+		File templateFile = new File(templatePath);
+		Workbook wb;
+
+		if (templateFile.exists()) {
+			// 使用模板导出
+			try (InputStream is = new FileInputStream(templateFile)) {
+				wb = new XSSFWorkbook(is);
+				Sheet sheet = wb.getSheetAt(0); // 获取第一个工作表
+
+				// 从第二行开始填充数据（假设第一行是表头）
+				int startRow = 1;
+				int r = startRow;
+
+				for (ResearchAchievement ra : list) {
+					if (ra.getStatus() != 2) continue;
+
+					Row row = sheet.createRow(r++);
+					row.createCell(0).setCellValue(r - startRow); // 序号
+					row.createCell(1).setCellValue(ra.getDepartment());
+					row.createCell(2).setCellValue(ra.getAchievementName());
+					row.createCell(3).setCellValue(ra.getSubmitterName());
+					row.createCell(4).setCellValue(ra.getTeamMembers() == null ? "" : ra.getTeamMembers().toString());
+					row.createCell(5).setCellValue(ra.getObtainDate().toString());
+					row.createCell(6).setCellValue(ra.getFieldName());
+					row.createCell(7).setCellValue(ra.getIndicatorName());
+					row.createCell(8).setCellValue(ra.getStandardName());
+					row.createCell(9).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
+					row.createCell(10).setCellValue(ra.getScoringInstruction());
+					row.createCell(11).setCellValue(ra.getAssessmentOrg());
+				}
+			}
+		} else {
+			// 使用默认导出（原有逻辑）
+			wb = new XSSFWorkbook();
+			Sheet sheet = wb.createSheet("成果");
+
+			// 创建表头
+			int r = 0;
+			Row head = sheet.createRow(r++);
+			String[] headList = {"序号", "部门", "成果名称", "团队负责人", "团队成员", "获得日期", "考核领域", "关键成效指标", "评价标准", "分值", "赋分说明", "考核组织部门"};
+			for (int i = 0; i < headList.length; i++) {
+				head.createCell(i).setCellValue(headList[i]);
+			}
+
+			// 填充数据
+			for (ResearchAchievement ra : list) {
+				if (ra.getStatus() != 2) continue;
+				Row row = sheet.createRow(r++);
+				row.createCell(0).setCellValue(r - 1);
+				row.createCell(1).setCellValue(ra.getDepartment());
+				row.createCell(2).setCellValue(ra.getAchievementName());
+				row.createCell(3).setCellValue(ra.getSubmitterName());
+				row.createCell(4).setCellValue(ra.getTeamMembers() == null ? "" : ra.getTeamMembers().toString());
+				row.createCell(5).setCellValue(ra.getObtainDate().toString());
+				row.createCell(6).setCellValue(ra.getFieldName());
+				row.createCell(7).setCellValue(ra.getIndicatorName());
+				row.createCell(8).setCellValue(ra.getStandardName());
+				row.createCell(9).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
+				row.createCell(10).setCellValue(ra.getScoringInstruction());
+				row.createCell(11).setCellValue(ra.getAssessmentOrg());
+			}
 		}
 
-		for (ResearchAchievement ra : list) {
-			if (ra.getStatus() != 2)	continue;
-			Row row = sheet.createRow(r++);
-			row.createCell(0).setCellValue(r-1);
-			row.createCell(1).setCellValue(ra.getDepartment());
-			row.createCell(2).setCellValue(ra.getAchievementName());
-			row.createCell(3).setCellValue(ra.getSubmitterName());
-			row.createCell(4).setCellValue(ra.getTeamMembers() == null ? "" : ra.getTeamMembers().toString());
-			row.createCell(5).setCellValue(ra.getObtainDate().toString());
-			row.createCell(6).setCellValue(ra.getFieldName());
-			row.createCell(7).setCellValue(ra.getIndicatorName());
-			row.createCell(8).setCellValue(ra.getStandardName());
-			row.createCell(9).setCellValue(ra.getScore() == null ? 0 : ra.getScore());
-			row.createCell(10).setCellValue(ra.getScoringInstruction());
-			row.createCell(11).setCellValue(ra.getAssessmentOrg());
-		}
-		String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-		Path dir = Paths.get(uploadDir, today);
-		Files.createDirectories(dir);
 		// 设置响应头，直接返回文件流
 		String filename = "KPI成果导出_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
 		response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

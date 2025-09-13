@@ -105,7 +105,12 @@
           </el-table-column>
           <el-table-column prop="score" label="分值" width="80" />
           <el-table-column prop="scoringInstruction" label="赋分说明" width="120" />
-          <el-table-column prop="obtainDate" label="提交日期" width="120" />
+          <el-table-column prop="obtainDate" label="获得日期" width="120" />
+          <el-table-column label="提交日期" width="120">
+            <template #default="{ row }">
+              {{ formatDate(row.updatedAt) }}
+            </template>
+          </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
               <el-tag 
@@ -260,6 +265,17 @@ const getStatusText = (status) => {
     3: '已退回'
   }
   return statusMap[status] || '未知'
+}
+
+// 日期格式化
+const formatDate = (value) => {
+  if (!value) return '-'
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return value
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 // 分页处理

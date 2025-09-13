@@ -28,7 +28,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="团队成员">
-              <el-input v-model="achievement.teamMembers" disabled placeholder="如有团队成员请填写" />
+              <el-input v-model="achievement.teamMembers" disabled />
             </el-form-item>
           </el-col>
         </el-row>
