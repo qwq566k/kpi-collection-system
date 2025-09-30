@@ -386,12 +386,15 @@ const getFileName = (file) => {
   
   // 如果是字符串（文件URL或文件名）
   if (typeof file === 'string') {
-    // 如果包含路径分隔符，取最后一部分
+    // 先取最后一段
+    let last = file
     if (file.includes('/')) {
-      return file.split('/').pop()
+      last = file.split('/').pop()
     }
-    // 否则直接返回文件名
-    return file
+    // 识别 uuid_原始文件名 的形式，仅当前缀为32位hex时剥离
+    const m = last.match(/^[0-9a-fA-F]{32}_(.+)$/)
+    if (m) return m[1]
+    return last
   }
   
   return ''

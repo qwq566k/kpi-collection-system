@@ -195,7 +195,10 @@ const downloadFile = async (file) => {
 
 // 获取文件名
 const getFileName = (fileUrl) => {
-  return fileUrl ? fileUrl.split('/').pop() : ''
+  if (!fileUrl) return ''
+  const last = fileUrl.includes('/') ? fileUrl.split('/').pop() : fileUrl
+  const m = last.match(/^[0-9a-fA-F]{32}_(.+)$/)
+  return m ? m[1] : last
 }
 
 // 日期格式化

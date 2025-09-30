@@ -28,12 +28,14 @@ public class FileStorageService {
 		if (file == null || file.isEmpty()) {
 			throw new IllegalArgumentException("上传文件为空");
 		}
-		String ext = StringUtils.hasText(file.getOriginalFilename()) ? 
-						FilenameUtils.getExtension(file.getOriginalFilename()) : "";
+		String originalName = StringUtils.hasText(file.getOriginalFilename()) ?
+				FilenameUtils.getName(file.getOriginalFilename()) : "file";
+		// 清理原始文件名中的非法字符（兼容 Windows 非法字符与空白符）
+		String sanitizedOriginal = originalName.replaceAll("[\\\\/:*?\"<>|\\s]+", "_");
 		String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 		Path dir = Paths.get(uploadDir, today);
 		Files.createDirectories(dir);
-		String name = UUID.randomUUID().toString().replaceAll("-", "") + (StringUtils.hasText(ext) ? "." + ext : "");
+		String name = UUID.randomUUID().toString().replaceAll("-", "") + "_" + sanitizedOriginal;
 		Path target = dir.resolve(name);
 		Files.copy(file.getInputStream(), target);
 		return "/upload/" + today + "/" + name;
