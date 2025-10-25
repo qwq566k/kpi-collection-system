@@ -56,6 +56,10 @@
           <el-icon><Upload /></el-icon>
           Excel导入
         </el-button>
+        <el-button @click="handleDownloadTemplate">
+          <el-icon><Download /></el-icon>
+          下载模板
+        </el-button>
         <el-button 
           type="danger" 
           :disabled="selectedUsers.length === 0"
@@ -191,7 +195,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Upload } from '@element-plus/icons-vue'
+import { Plus, Upload, Download } from '@element-plus/icons-vue'
 import AdminLayout from '../../components/AdminLayout.vue'
 import { 
   queryUsers, 
@@ -200,6 +204,7 @@ import {
   deleteUser, 
   importUsers 
 } from '../../api/admin'
+import { downloadTemplate } from '../../api/common'
 
 // 查询条件
 const queryForm = reactive({
@@ -382,14 +387,33 @@ const handleImport = async () => {
     
     const result = await importUsers(formData)
     importResult.value = result
-    
-    if (result.successCount > 0) {
-      ElMessage.success(`成功导入 ${result.successCount} 条数据`)
+
+    if (result && result.includes('成功')) {
+      ElMessage.success('成功导入')
       loadUsers()
     }
   } catch (error) {
     console.error('导入失败:', error)
     ElMessage.error('导入失败: ' + (error.response?.data?.message || error.message))
+  }
+  showImportDialog.value = false
+}
+
+// 下载用户信息模板
+const handleDownloadTemplate = async () => {
+  try {
+    const filename = '用户信息模板.xlsx'
+    const blob = await downloadTemplate(filename)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('模板下载失败，请稍后重试')
   }
 }
 

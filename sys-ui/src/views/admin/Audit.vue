@@ -81,6 +81,7 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column prop="score" label="分值" width="65" align="center" />
           <el-table-column label="佐证材料">
             <template #default="{ row }">
               <el-link 
@@ -391,9 +392,18 @@ const getFileName = (file) => {
     if (file.includes('/')) {
       last = file.split('/').pop()
     }
-    // 识别 uuid_原始文件名 的形式，仅当前缀为32位hex时剥离
+    
+    // 识别 uuid_编码后的原始文件名 的形式，仅当前缀为32位hex时剥离
     const m = last.match(/^[0-9a-fA-F]{32}_(.+)$/)
-    if (m) return m[1]
+    if (m) {
+      // 解码URL编码的文件名
+      try {
+        return decodeURIComponent(m[1])
+      } catch (e) {
+        // 解码失败时返回原始字符串
+        return m[1]
+      }
+    }
     return last
   }
   

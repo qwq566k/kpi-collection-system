@@ -198,7 +198,16 @@ const getFileName = (fileUrl) => {
   if (!fileUrl) return ''
   const last = fileUrl.includes('/') ? fileUrl.split('/').pop() : fileUrl
   const m = last.match(/^[0-9a-fA-F]{32}_(.+)$/)
-  return m ? m[1] : last
+  if (m) {
+    // 解码URL编码的文件名
+    try {
+      return decodeURIComponent(m[1])
+    } catch (e) {
+      // 解码失败时返回原始字符串
+      return m[1]
+    }
+  }
+  return last
 }
 
 // 日期格式化
