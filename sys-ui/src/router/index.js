@@ -14,37 +14,38 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: {title: '大数据与计算机学院-科研成果收集'}
   },
   {
     path: '/user',
     name: 'UserHome',
     component: UserHome,
-    meta: { requiresAuth: true, role: 'teacher' }
+    meta: { requiresAuth: true, role: 'teacher', title: '大数据与计算机学院-科研成果收集' }
   },
   {
     path: '/admin',
     name: 'AdminAudit',
     component: AdminAudit,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'admin', title: '大数据与计算机学院-科研成果收集' }
   },
   {
     path: '/admin/stats',
     name: 'AdminStats',
     component: AdminStats,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'admin', title: '大数据与计算机学院-科研成果收集' }
   },
   {
     path: '/admin/export',
     name: 'AdminExport',
     component: AdminExport,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'admin', title: '大数据与计算机学院-科研成果收集' }
   },
   {
     path: '/admin/users',
     name: 'AdminUsers',
     component: AdminUsers,
-    meta: { requiresAuth: true, role: 'admin' }
+    meta: { requiresAuth: true, role: 'admin', title: '大数据与计算机学院-科研成果收集' }
   }
 ]
 
@@ -55,6 +56,13 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  if (to.meta.title) {
+    document.title = to.meta.title
+  } else {
+    document.title = '科研KPI成果收集系统' // 默认标题
+  }
+  
   // 直接从localStorage获取用户信息，避免在路由守卫中使用store
   const token = localStorage.getItem('token')
   const userRole = localStorage.getItem('userRole')
