@@ -71,6 +71,13 @@ public class ResearchAchievementController {
 		data.put("rows", p.getRecords());
 		return Result.success(data);
 	}
+
+	@DeleteMapping("/deleteRecord")
+	public Result<Void> deleteRecord(@RequestParam @NotNull Integer id) {
+		service.deleteRecord(id);
+		return Result.success();
+	}
+
 }
 
 

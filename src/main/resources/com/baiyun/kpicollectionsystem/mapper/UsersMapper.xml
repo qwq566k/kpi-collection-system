@@ -5,11 +5,19 @@
 <!--namespace对应包的全类名-->
 <mapper namespace="com.baiyun.kpicollectionsystem.mapper.UsersMapper">
 
-    <insert id="saveBatch">
+    <insert id="saveBatch" useGeneratedKeys="true" keyProperty="id">
         insert into users (username, password, employee_id, name, phone, department, status, created_at, updated_at)
         values
         <foreach collection="users" item="user" separator=",">
             (#{user.username}, #{user.password}, #{user.employeeId}, #{user.name}, #{user.phone}, #{user.department}, #{user.status}, #{user.createdAt}, #{user.updatedAt})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertRoleWithUser">
+        insert into sys_user_role (user_id, role_id)
+        values
+        <foreach collection="userRoles" item="userRole" separator=",">
+            (#{userRole.userId}, #{userRole.roleId})
         </foreach>
     </insert>
 </mapper>

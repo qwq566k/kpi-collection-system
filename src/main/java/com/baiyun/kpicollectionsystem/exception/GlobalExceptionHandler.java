@@ -1,6 +1,8 @@
 package com.baiyun.kpicollectionsystem.exception;
 
 import com.baiyun.kpicollectionsystem.common.Result;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
@@ -10,6 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public Result<Void> handleValidation(MethodArgumentNotValidException e) {
@@ -44,7 +48,8 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public Result<Void> handleOther(Exception e) {
-		return Result.failure("系统异常: " + e.getMessage());
+        log.error("系统异常: {}", e.getMessage());
+		return Result.failure("系统异常: 请联系管理员");
 	}
 }
 

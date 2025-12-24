@@ -15,6 +15,11 @@ export const rejectRecord = (data) => {
   return api.put('/rejectRecord', data)
 }
 
+// 成果审核-删除记录
+export const deleteRecord = (id) => {
+  return api.delete(`/deleteRecord?id=${id}`)
+}
+
 // 成果统计-提交量统计
 export const getSubmissionStats = () => {
   return api.get('/getSubmissionStats')
@@ -41,7 +46,18 @@ export const exportExcel = (data) => {
     responseType: 'blob' // 设置响应类型为blob以处理文件流
   })
 }
-
+// 领域统计数据导出-导出Excel
+export const exportFieldExcel = () => {
+  return api.post('/exportFieldExcel', {}, {
+    responseType: 'blob' // 设置响应类型为blob以处理文件流
+  })
+}
+// 负责人统计数据导出-导出Excel
+export const exportSubmitterExcel = () => {
+  return api.post('/exportSubmitterExcel', {}, {
+    responseType: 'blob' // 设置响应类型为blob以处理文件流
+  })
+}
 // 用户管理-条件查询
 export const queryUsers = (data) => {
   return api.post('/queryUsers', data)

@@ -56,7 +56,28 @@
           <el-table-column prop="year" label="年度" width="80" />
           <el-table-column prop="department" label="部门" width="100" />
           <el-table-column prop="submitterName" label="负责人" width="80" />
-          <el-table-column prop="achievementName" label="成果名称" min-width="80" align="center"/>
+          <el-table-column label="成果名称" min-width="120" align="center">
+            <template #default="{ row }">
+              <div class="standard-text">
+                <span 
+                  v-if="!row.showFull"
+                  class="ellipsis-line"
+                  @click="toggleStandard(row)"
+                  title="点击展开"
+                >
+                  {{ row.achievementName }}
+                </span>
+                <div 
+                  v-else
+                  class="full-standard"
+                  @click="toggleStandard(row)"
+                  title="点击收起"
+                >
+                  {{ row.achievementName }}
+                </div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="fieldName" label="考核领域" width="120" />
           <el-table-column prop="indicatorName" label="关键指标" width="120" />
           <el-table-column label="评价标准" min-width="200">
@@ -92,17 +113,17 @@
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column label="获得日期" width="120">
+          <el-table-column label="获得日期" width="100" align="center">
             <template #default="{ row }">
               {{ formatDate(row.submitDate || row.obtainDate) }}
             </template>
           </el-table-column>
-          <el-table-column label="提交日期" width="120">
+          <el-table-column label="提交日期" width="100" align="center">
             <template #default="{ row }">
               {{ formatDate(row.updatedAt) }}
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100">
+          <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
               <el-tag 
                 :type="getStatusType(row.status)"
@@ -112,14 +133,21 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="320" fixed="right" align="center">
             <template #default="{ row }">
               <el-button 
-                :type="row.status === 3 ? 'danger' : row.status === 2 ? 'success' : 'primary'"
+                :type="'success'"
                 size="small"
                 @click="handleView(row)"
               >
                 查看
+              </el-button>
+              <el-button 
+                :type="'primary'"
+                size="small"
+                @click="handleEdit(row)"
+              >
+                编辑
               </el-button>
               <el-button 
                 :disabled="row.status !== 1"
@@ -131,11 +159,19 @@
               </el-button>
               <el-button 
                 :disabled="row.status !== 1"
-                type="danger" 
+                type="warning" 
                 size="small"
                 @click="handleReject(row)"
               >
                 退回
+              </el-button>
+              <el-button 
+                :disabled="row.status !== 2"
+                :type="'danger'"
+                size="small"
+                @click="handleDelete(row)"
+              >
+                删除
               </el-button>
             </template>
           </el-table-column>
@@ -162,6 +198,9 @@
     <!-- 详情对话框 -->
     <AchievementDetail ref="detailRef" />
 
+    <!-- 编辑对话框 -->
+    <AchievementEdit ref="editRef" @saved="loadRecords" />
+
     <!-- 退回原因对话框 -->
     <el-dialog v-model="showRejectDialog" title="退回原因" width="500px">
       <el-form :model="rejectForm" :rules="rejectRules" ref="rejectFormRef">
@@ -186,10 +225,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '../../components/AdminLayout.vue'
-import { queryRecords, approveRecord, rejectRecord } from '../../api/admin'
+import { queryRecords, approveRecord, rejectRecord, deleteRecord } from '../../api/admin'
 import { getAllField, downloadByPath } from '../../api/common'
 import { getRecordDetail } from '../../api/user'
 import AchievementDetail from '../../components/AchievementDetail.vue'
+import AchievementEdit from '../../components/AchievementEdit.vue'
 
 // 查询条件
 const queryForm = reactive({
@@ -205,6 +245,8 @@ const fields = ref([])
 const records = ref([])
 // 详情组件引用
 const detailRef = ref()
+// 编辑组件引用
+const editRef = ref()
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -268,6 +310,18 @@ const handleView = async (row) => {
   }
 }
 
+// 编辑记录
+const handleEdit = async (row) => {
+  try {
+    // 获取完整记录详情
+    const data = await getRecordDetail(row.id)
+    editRef.value?.open({ ...row, ...data })
+  } catch (e) {
+    // 如果获取详情失败，使用行数据
+    editRef.value?.open({ ...row })
+  }
+}
+
 // 通过记录
 const handleApprove = async (row) => {
   try {
@@ -314,6 +368,26 @@ const confirmReject = async () => {
       return
     }
     console.error('退回失败:', error)
+  }
+}
+
+// 删除记录
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条记录吗？删除后将无法恢复。', '确认删除', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await deleteRecord(row.id)
+    ElMessage.success('删除成功')
+    loadRecords()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
   }
 }
 

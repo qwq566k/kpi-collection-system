@@ -144,6 +144,9 @@
                   >
                     <el-button type="primary">选择附件</el-button>
                   </el-upload>
+                  <span style="margin-left: 0px; color: #909399; font-size: 12px;">
+                    文件大小10MB以内
+                  </span>
                 </div>
               </el-form-item>
             </el-col>

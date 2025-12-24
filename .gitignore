@@ -1,3 +1,9 @@
+### custom ###
+application-local.yml
+logs/
+kpi-uploads-file/
+kpi-download-template/
+
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar

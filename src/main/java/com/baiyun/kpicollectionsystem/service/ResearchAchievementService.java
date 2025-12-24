@@ -9,6 +9,7 @@ public interface ResearchAchievementService {
 	void updateRecord(ResearchAchievement ra);
 	ResearchAchievement findById(Integer id);
 	IPage<ResearchAchievement> queryBySubmitter(Integer submitterId, int page, int size);
+	void deleteRecord(Integer id);
 }
 
 

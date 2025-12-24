@@ -35,7 +35,9 @@
       <!-- 按考核领域统计 -->
       <div class="area-stats-section">
         <div class="card">
-          <div class="card-title">按考核领域统计（分数）</div>
+          <div class="card-title">按考核领域统计（分数）
+            <el-button type="success" @click="handleExportField">导出Excel</el-button>
+          </div>
           <div class="stat-grid">
             <div 
               v-for="area in areaStats" 
@@ -52,7 +54,9 @@
       <!-- 按负责人统计 -->
       <div class="submitter-stats-section">
         <div class="card">
-          <div class="card-title">按负责人统计（分数）</div>
+          <div class="card-title">按负责人统计（分数）
+            <el-button type="success" @click="handleExportSubmitter">导出Excel</el-button>
+          </div>
           <div class="stat-grid">
             <div 
               v-for="submitter in submitterStats" 
@@ -76,7 +80,9 @@ import AdminLayout from '../../components/AdminLayout.vue'
 import { 
   getSubmissionStats, 
   getAreaStats, 
-  getSubmitterStats 
+  getSubmitterStats,
+  exportFieldExcel,
+  exportSubmitterExcel
 } from '../../api/admin'
 
 // 统计数据
@@ -116,7 +122,56 @@ const loadSubmitterStats = async () => {
     ElMessage.error('获取负责人统计失败')
   }
 }
-
+// 导出考核领域数据
+const handleExportField = async () => {
+  try {
+    // 调用导出接口获取文件流
+    const response = await exportFieldExcel()
+    
+    // 创建blob URL并触发下载
+    const blob = new Blob([response], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `考核领域数据导出_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('导出成功，文件开始下载')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
+  }
+}
+// 导出负责人数据
+const handleExportSubmitter = async () => {
+  try {
+    // 调用导出接口获取文件流
+    const response = await exportSubmitterExcel()
+    
+    // 创建blob URL并触发下载
+    const blob = new Blob([response], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `负责人成果数据导出_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('导出成功，文件开始下载')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
+  }
+}
 // 页面加载时获取数据
 onMounted(() => {
   loadSubmissionStats()

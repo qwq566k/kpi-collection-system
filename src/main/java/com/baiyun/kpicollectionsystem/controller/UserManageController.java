@@ -1,9 +1,14 @@
 package com.baiyun.kpicollectionsystem.controller;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
+import com.baiyun.kpicollectionsystem.entity.SysUserRole;
+import com.baiyun.kpicollectionsystem.mapper.SysUserRoleMapper;
 import com.baiyun.kpicollectionsystem.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baiyun.kpicollectionsystem.common.Result;
@@ -22,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +39,16 @@ public class UserManageController {
 
 	private final UsersMapper usersMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final SysUserRoleMapper sysUserRoleMapper;
+
 	@Autowired
 	private UserService userService;
 
-	public UserManageController(UsersMapper usersMapper, PasswordEncoder passwordEncoder) {
+	public UserManageController(UsersMapper usersMapper, PasswordEncoder passwordEncoder, SysUserRoleMapper sysUserRoleMapper) {
 		this.usersMapper = usersMapper;
 		this.passwordEncoder = passwordEncoder;
-	}
+        this.sysUserRoleMapper = sysUserRoleMapper;
+    }
 
 	@PostMapping("/queryUsers")
 	public Result<Map<String, Object>> query(@RequestBody QueryReq req) {
@@ -62,10 +71,17 @@ public class UserManageController {
 		u.setName(req.getName());
 		u.setPhone(req.getPhone());
 		u.setDepartment(req.getDepartment());
-		u.setUsername(req.getEmployeeId());
-		u.setPassword(passwordEncoder.encode(req.getPassword()));
+		u.setUsername(req.getName());
+		u.setPassword(req.getPassword());
 		u.setStatus(1);
 		usersMapper.insert(u);
+		// 建立用户角色关系
+		int id = usersMapper.getIdByEmployeeId(u.getEmployeeId());
+		SysUserRole userRole = new SysUserRole();
+		userRole.setUserId(id);
+		userRole.setRoleId(2);
+		ArrayList<SysUserRole> sysUserRoles = CollUtil.newArrayList(userRole);
+		usersMapper.batchInsertRoleWithUser(sysUserRoles);
 		return Result.success();
 	}
 
@@ -86,6 +102,10 @@ public class UserManageController {
 		for (String s : ids.split(",")) {
 			if (!s.isBlank()) {
 				usersMapper.deleteById(Integer.parseInt(s.trim()));
+
+				QueryWrapper<SysUserRole> wrapper = new QueryWrapper<>();
+				wrapper.eq("user_id", Integer.parseInt(s.trim()));
+				sysUserRoleMapper.delete(wrapper);
 			}
 		}
 		return Result.success();
@@ -113,17 +133,35 @@ public class UserManageController {
 			reader.addHeaderAlias("名字", "name");
 			reader.addHeaderAlias("手机号", "phone");
 			reader.addHeaderAlias("部门", "department");
-			//处理其他字段
+
 			List<Users> users = reader.readAll(Users.class);
-			for (Users user : users) {
-				user.setStatus(1);
-				user.setCreatedAt(LocalDateTime.now());
-				user.setUpdatedAt(LocalDateTime.now());
-			}
+
 			//批量保存数据
 			if(users.isEmpty()){
 				return Result.failure("数据为空");
 			}
+			//处理其他字段
+			for (Users user : users) {
+				// 处理用户名：如果用户名为空，使用名字作为用户名
+				if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+					if (user.getName() != null && !user.getName().trim().isEmpty()) {
+						user.setUsername(user.getName().trim());
+					} else {
+						return Result.failure("用户必须要有用户名或名字");
+					}
+				}
+				// 处理密码：设置默认密码
+				if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+					user.setPassword(user.getEmployeeId()); // 默认密码为工号
+				} else {
+					user.setPassword(user.getPassword());
+				}
+
+				user.setStatus(1);
+				user.setCreatedAt(LocalDateTime.now());
+				user.setUpdatedAt(LocalDateTime.now());
+			}
+
 			userService.saveBatch(users);
 		} catch (Exception e) {
 			log.info(e.getMessage());

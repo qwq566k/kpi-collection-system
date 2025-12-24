@@ -148,6 +148,130 @@ public class ExportController {
 		}
 	}
 
+	@PostMapping("/exportFieldExcel")
+	@PreAuthorize("hasRole('admin')")
+	public void exportFieldExcel(HttpServletResponse response) throws Exception {
+
+		List<Map<String, Object>> list = mapper.selectAreaStats();
+		// 检查模板文件是否存在
+		String templatePath = excelTemplateDir + "/考核领域数据导出模板.xlsx";
+		File templateFile = new File(templatePath);
+		Workbook wb;
+
+		if (templateFile.exists()) {
+			// 使用模板导出
+			try (InputStream is = new FileInputStream(templateFile)) {
+				wb = new XSSFWorkbook(is);
+				Sheet sheet = wb.getSheetAt(0); // 获取第一个工作表
+
+				// 从第二行开始填充数据（假设第一行是表头）
+				int startRow = 1;
+				int r = startRow;
+
+				for (Map<String, Object> ra : list) {
+					Row row = sheet.createRow(r++);
+					row.createCell(0).setCellValue(r - startRow); // 序号
+					row.createCell(1).setCellValue(ra.get("fieldName").toString());
+					row.createCell(2).setCellValue(ra.get("score").toString());
+				}
+			}
+		} else {
+			// 使用默认导出（原有逻辑）
+			wb = new XSSFWorkbook();
+			Sheet sheet = wb.createSheet("成果");
+
+			// 创建表头
+			int r = 0;
+			Row head = sheet.createRow(r++);
+			String[] headList = {"序号","考核领域","分值"};
+			for (int i = 0; i < headList.length; i++) {
+				head.createCell(i).setCellValue(headList[i]);
+			}
+
+			// 填充数据
+			for (Map<String, Object> ra : list) {
+				Row row = sheet.createRow(r++);
+				row.createCell(0).setCellValue(r - 1);
+				row.createCell(1).setCellValue(ra.get("fieldName").toString());
+				row.createCell(2).setCellValue(ra.get("score").toString());
+			}
+		}
+
+		// 设置响应头，直接返回文件流
+		String filename = "考核领域数据导出_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+		response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(filename, "UTF-8") + "\"");
+
+		// 直接写入响应输出流
+		try (ServletOutputStream out = response.getOutputStream()) {
+			wb.write(out);
+		} finally {
+			wb.close();
+		}
+	}
+
+	@PostMapping("/exportSubmitterExcel")
+	@PreAuthorize("hasRole('admin')")
+	public void exportSubmitterExcel(HttpServletResponse response) throws Exception {
+
+		List<Map<String, Object>> list = mapper.selectSubmitterStats();
+		// 检查模板文件是否存在
+		String templatePath = excelTemplateDir + "/负责人成果数据导出模板.xlsx";
+		File templateFile = new File(templatePath);
+		Workbook wb;
+
+		if (templateFile.exists()) {
+			// 使用模板导出
+			try (InputStream is = new FileInputStream(templateFile)) {
+				wb = new XSSFWorkbook(is);
+				Sheet sheet = wb.getSheetAt(0); // 获取第一个工作表
+
+				// 从第二行开始填充数据（假设第一行是表头）
+				int startRow = 1;
+				int r = startRow;
+
+				for (Map<String, Object> ra : list) {
+					Row row = sheet.createRow(r++);
+					row.createCell(0).setCellValue(r - startRow); // 序号
+					row.createCell(1).setCellValue(ra.get("submitterName").toString());
+					row.createCell(2).setCellValue(ra.get("score").toString());
+				}
+			}
+		} else {
+			// 使用默认导出（原有逻辑）
+			wb = new XSSFWorkbook();
+			Sheet sheet = wb.createSheet("成果");
+
+			// 创建表头
+			int r = 0;
+			Row head = sheet.createRow(r++);
+			String[] headList = {"序号","负责人名称","分值"};
+			for (int i = 0; i < headList.length; i++) {
+				head.createCell(i).setCellValue(headList[i]);
+			}
+
+			// 填充数据
+			for (Map<String, Object> ra : list) {
+				Row row = sheet.createRow(r++);
+				row.createCell(0).setCellValue(r - 1);
+				row.createCell(1).setCellValue(ra.get("submitterName").toString());
+				row.createCell(2).setCellValue(ra.get("score").toString());
+			}
+		}
+
+		// 设置响应头，直接返回文件流
+		String filename = "负责人成果数据导出_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+		response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(filename, "UTF-8") + "\"");
+
+		// 直接写入响应输出流
+		try (ServletOutputStream out = response.getOutputStream()) {
+			wb.write(out);
+		} finally {
+			wb.close();
+		}
+	}
+
 	private LambdaQueryWrapper<ResearchAchievement> buildWrapperFromReq(Map<String, Object> req) {
 		LambdaQueryWrapper<ResearchAchievement> qw = new LambdaQueryWrapper<>();
 		Object fieldId = req.get("fieldId");
@@ -158,6 +282,7 @@ public class ExportController {
 		if (submitterName instanceof String s && !s.isBlank()) qw.like(ResearchAchievement::getSubmitterName, s);
 		if (startDate instanceof String start && !start.isBlank()) qw.ge(ResearchAchievement::getObtainDate, startDate);
 		if (endDate instanceof String end && !end.isBlank()) qw.le(ResearchAchievement::getObtainDate, endDate);
+		qw.ne(ResearchAchievement::getStatus, 4);
 		return qw;
 	}
 

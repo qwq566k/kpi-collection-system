@@ -48,6 +48,8 @@ public class AdminController {
 		if (req.getFieldId() != null) qw.eq(ResearchAchievement::getFieldId, req.getFieldId());
 		if (req.getSubmitterName() != null && !req.getSubmitterName().isEmpty()) qw.like(ResearchAchievement::getSubmitterName, req.getSubmitterName());
 		if (req.getStatus() != null) qw.eq(ResearchAchievement::getStatus, req.getStatus());
+		//过滤掉已删除的数据
+		qw.ne(ResearchAchievement::getStatus, 4);
 		qw.orderByDesc(ResearchAchievement::getCreatedAt);
 		IPage<ResearchAchievement> p = mapper.selectPage(page, qw);
 		Map<String, Object> data = new HashMap<>();
